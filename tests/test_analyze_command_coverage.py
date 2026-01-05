@@ -113,14 +113,18 @@ class TestAnalyzeCommandCoverage(unittest.TestCase):
     @patch("src.commands.analyze.AIAgent")
     @patch("src.commands.analyze.ResultWriter")
     @patch("src.commands.base_command.DataProvider")
-    @patch("src.validation_engine.ValidationEngine")
+    @patch("src.domain.models.StockAnalysisData")
     def test_guardrail_abnormal_skip(
-        self, mock_val_cls, mock_provider_cls, mock_writer_cls, mock_agent_cls
+        self, mock_stock_data_cls, mock_provider_cls, mock_writer_cls, mock_agent_cls
     ):
         """Test Guardrail (Abnormal Skip)"""
         cmd = AnalyzeCommand(self.config)
-        mock_val = mock_val_cls.return_value
-        mock_val.is_abnormal.return_value = (True, ["Critical Debt"])
+
+        # モックのStockAnalysisDataインスタンスを設定
+        mock_stock_instance = MagicMock()
+        mock_stock_instance.should_skip_analysis = True
+        mock_stock_instance.validation_flags.skip_reasons = [MagicMock(value="Critical Debt")]
+        mock_stock_data_cls.return_value = mock_stock_instance
 
         mock_provider = mock_provider_cls.return_value
         mock_provider.get_ai_cache.return_value = (None, "hash")
