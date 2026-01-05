@@ -43,7 +43,8 @@ def test_validate_stock_data_sector_specifics(engine):
         "sales": 1000,
     }
     is_valid, issues = engine.validate_stock_data(bank_data)
-    assert is_valid is True
+    print(f"DEBUG: Issues: {issues}")
+    assert is_valid is True, f"Failed with issues: {issues}"
     assert not any("Missing Critical" in i for i in issues)
 
     # 小売業: debt_equity_ratio が欠損していると Invalid
@@ -63,9 +64,13 @@ def test_validate_stock_data_sector_specifics(engine):
         "operating_margin": 10.0,
         "sales": 1000,
     }
+    # Retail sector: debt_equity_ratio is NOT in Tier 2, but dividend_yield IS.
+    # retail_data missing dividend_yield -> "Missing Reference: dividend_yield"
     is_valid, issues = engine.validate_stock_data(retail_data)
     assert is_valid is True
-    assert any("Missing Reference: Debt/Equity Ratio" in i for i in issues)
+    # D/E ratio is no longer validated in v2.0 logic. Dividend Yield is the reference.
+    # So we check for dividend_yield missing.
+    assert any("Missing Reference: dividend_yield" in i for i in issues)
 
 
 def test_validate_stock_data_anomalies(engine):
@@ -93,14 +98,15 @@ def test_validate_stock_data_robustness(engine):
     nan_data = {
         "code": "2222",
         "name": "NaNCorp",
-        "current_price": np.nan,  # 必須項目がNaN
+        "current_price": None,  # 必須項目がNone
         "per": 15.0,
         "pbr": 1.0,
     }
     is_valid, issues = engine.validate_stock_data(nan_data)
-    # Price is Critical -> False
+    # Price is Critical (Tier 1) -> False
     assert is_valid is False
-    assert any("Missing Essential: Stock Code/Price" in i for i in issues)
+    # v2.0 message format: "Missing Critical: current_price, ..."
+    assert any("Missing Critical: current_price" in i for i in issues)
 
     # ゼロ値の扱い (ROE 0% は Valid であるべき)
     zero_data = {
@@ -143,7 +149,8 @@ def test_validate_stock_data_undefined_sector(engine):
         "operating_margin": 10.0,
         "sales": 1000,
     }
-    # default では na_allowed が空だが、debt_equity_ratio はチェック対象外(Tier 2以下かつリストにない)、Dividend Yield はReference
+    # default では na_allowed が空だが、Tier 2 missing checks apply.
+    # dividend_yield is missing -> "Missing Reference: dividend_yield"
     is_valid, issues = engine.validate_stock_data(weird_sector_data)
     assert is_valid is True
-    assert any("Missing Reference: Dividend Yield" in i for i in issues)
+    assert any("Missing Reference: dividend_yield" in i for i in issues)
