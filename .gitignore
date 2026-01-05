@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv
+.env
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Auto-generated context and logs
+full_context/*.md
+!full_context/*_project_full_context.md
+full_context/archive/
+!full_context/generate_full_context.py
+
+# Modification records
+!history/*.md
+!trouble/*.md
+
+# Submodules
+stock-analyzer4/
+
+# Parent level logs/temp
+*.log
