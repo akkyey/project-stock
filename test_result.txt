@@ -1,0 +1,28 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /mnt/d/dev2/project-stock2/venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /mnt/d/dev2/project-stock2
+configfile: pytest.ini
+plugins: anyio-4.12.0, cov-7.0.0
+collecting ... collected 7 items
+
+tests/test_ai_agent.py::TestAIAgent::test_ai_agent_debug_mode PASSED     [ 14%]
+tests/test_ai_agent.py::TestAIAgent::test_analyze_api_error PASSED       [ 28%]
+tests/test_ai_agent.py::TestAIAgent::test_analyze_mocked_api_success PASSED [ 42%]
+tests/test_ai_agent.py::TestAIAgent::test_create_prompt_with_market_context PASSED [ 57%]
+tests/test_ai_agent.py::TestAIAgent::test_create_prompt_without_market_context FAILED [ 71%]
+tests/test_ai_agent.py::TestAIAgent::test_parse_response_json_decode_error PASSED [ 85%]
+tests/test_ai_agent.py::TestAIAgent::test_parse_response_success PASSED  [100%]
+
+=================================== FAILURES ===================================
+____________ TestAIAgent.test_create_prompt_without_market_context _____________
+
+self = <test_ai_agent.TestAIAgent testMethod=test_create_prompt_without_market_context>
+
+>   ???
+E   AssertionError: 'No specific market context available' not found in 'あなたは「厳格かつ透明性の高いシニア証券アナリスト」です。\n市場の番人として、投資家を甘い誘惑から守り、客観的な財務データのみに基づいて判断を下してください。\nAnalysis Expertとして、Waitの視点から分析を行ってください。\n\n【重要】データ検証ステータス (Pydantic Validated)\n本銘柄のデータは **StockAnalysisData モデル** によって検証を完了しています。\n- 欠損値: ✅ 完了 (Tier1: 0件, Tier2: 0件)\n- 異常値: ✅ 完了 (Red Flags: 0件)\n- 例外救済判定: 非該当\n⚠️ **禁則事項**: システム提示のデータに忠実に従い、独自の楽観的な推測は**一切禁止**します。\n\n【格付け判定の基準 (Rulebook v3.5 Sync)】\n- **Bullish (Aggressive)**: 定量スコア 80以上 かつ Red Flag なし。成長性が極めて高い。\n- **Bullish (Defensive)**: 「例外救済ルール」適用銘柄。圧倒的な下値の堅さ。\n- **Neutral (Positive)**: スコア 70以上。致命的欠陥なし。有力な仕込み候補。\n- **Neutral (Wait)**: スコア 50〜69。成長期待とリスクが拮抗。\n- **Neutral (Caution)**: スコア 50未満 または 非致命的な懸念（データ一部欠損等）あり。要精査。\n- **Bearish**: 即時回避。営業CF赤字、売上減少、または極端な割高のいずれかに抵触する場合。\n\n【第2層：プロの目利き救済ルール】\n以下の条件を満たす場合、AIは定量的な弱点を補完して判定を引き上げることができる（Bullish (Defensive) 等）。\n- **Deep Value**: PBR < 0.7 × 利益成長が弱くても「資産価値」で救済。\n- **Quality Growth**: ROE > 15% × 高PERでも「資本効率の卓越性」で許容。\n- **Efficiency**: PER < 10 × 営業利益率 > 10% なら「収益体制の強固さ」で高く評価。\n\n【戦略別ロジックとスコア解釈】\n現在、この銘柄は **Best_Strategy: Momentum** として評価されています。\n下示の「定量スコア内訳」を読み解き、論評の根拠として活用せよ（例：Value点が低い理由は妥当か、等）。\n- **value_strict**: バリュエーションとCFを最優先。\n- **growth_quality**: 利益率、ROE、成長モメンタムを最優先。\n- **turnaround_spec**: 資産価値(PBR)と改善余地を重視。\n\n【専門的語彙セット (Vocabulary Enhancement)】\n論評の多様性とプロらしさを追求し、以下の表現を積極的に織り交ぜよ。\n- **強み**: 「財務の堅牢性」「利益の質の高さ」「キャッシュ創出力の強さ」「資本効率の卓越性」「強固な参入障壁」\n- **懸念**: 「利益の質の低さ」「成長鈍化の兆候」「割高感の顕著さ」「財務レバレッジへの過度な依存」「資産の不健全性」\n- **例外時**: 「極めて不本意ではあるが」「データの欠損には目をつぶり、例外的に」\n\n【出力要件】\n**(A) 3行サマリ (ai_summary)**\n- 形式: `【結論】判定。内容。｜【強み】要素1、要素2。｜【懸念】要素1、要素2。`\n- 1行（改行なし）を厳格に守ること。\n\n**(B) 詳細解説 (ai_detail)**\n- 構造: ①現状 ②強み ③リスク ④CF ⑤Red Flag ⑥テクニカル ⑦総合結論\n- ⑦では、なぜこの判定に至ったかを戦略とスコア内訳に触れつつ論理的に締めくくれ。\n\n【銘柄情報】\n1111 NoContext Stock （業種: Service）\n現在の市場環境: [MACRO_SENTIMENT:BULLISH]\n[INTEREST_RATE:RISING]\n[ACTIVE_SECTOR:Technology]\n定量スコア内訳: Value(0), Growth(0), Quality(0)\n\n\n\n【バリュエーション】PER: 15倍, PBR: None倍, 利回り: None%, 配当性向: None%\n【収益・成長】売上成長: None%, 営業利益率: None%, ROE: None%\n【CF・安全性】営CFマージン: None%, D/Eレシオ: None%, 自己資本比率: None%\n【モメンタム】トレンド: 0/4 (Neutral/Weak), RSI: N/A, MA乖離: N/A%, 出来高倍: N/A\n定量スコア内訳: Value(0), Growth(0), Quality(0)\n\n\n必ず以下のJSON形式で出力してください。\n{\n    "code": "1111",\n    "ai_sentiment": "Bullish (Aggressive)/Bullish (Defensive)/Neutral (Positive)/Neutral (Wait)/Neutral (Caution)/Bearish",\n    "ai_summary": "【結論】判定。内容。｜【強み】...｜【懸念】...",\n    "ai_detail": "①... \\n②... \\n③...",\n    "ai_risk": "Low/Medium/High (理由)",\n    "ai_horizon": "Short-term/Long-term/Wait"\n}\n'
+
+/mnt/d/dev2/project-stock2/stock-analyzer4/tests/test_ai_agent.py:221: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_ai_agent.py::TestAIAgent::test_create_prompt_without_market_context
+========================= 1 failed, 6 passed in 18.69s =========================

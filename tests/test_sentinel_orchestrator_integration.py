@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -88,8 +89,9 @@ class TestSentinelOrchestratorIntegration:
                 ),
                 strategy_name="test_strat",
                 quant_score=90,
-                analyzed_at=get_current_time(),
+                analyzed_at=get_current_time() - timedelta(days=7), # Set to a past date
             )
+            print("DEBUG: Initial Stock and AnalysisResult created.")
 
         # 2. Mock DataFetcher to return market data with volatility
         # Sentinel calls: _scan_market -> _process_yf_df
@@ -180,35 +182,47 @@ class TestSentinelOrchestratorIntegration:
                 equity_ratio=50.0,
                 entry_date="2025-01-01",
             )
-            AnalysisResult.create(
+            # 4. Create an older analysis result (manual)
+            # Use 'Balanced Strategy' to match orchestrator config
+            ar = AnalysisResult.create(
                 market_data=md,
-                strategy_name="strategy_A",
+                strategy_name="Balanced Strategy",
                 quant_score=85,
                 ai_sentiment="Bullish",
-                analyzed_at=get_current_time(),
+                analyzed_at=get_current_time() - timedelta(days=1),  # Yesterday
             )
 
-        orchestrator = Orchestrator(debug_mode=True)
-        # Mock config to include strategy_A
-        import subprocess
+        # Prepare Config
+        test_db_path = os.getenv("STOCK_TEST_DB_PATH", "tests/test_stock_master.db")
+        test_out_dir = os.getenv("STOCK_TEST_OUTPUT_PATH", "tests/data/output")
 
-        orchestrator.config = {
+        test_config = {
             "strategies": {
-                "Balanced Strategy": {  # Match the default in _run_daily
+                "Balanced Strategy": {
                     "base_score": 0,
-                    "min_requirements": {},  # No requirements to pass filter
+                    "min_requirements": {},
                     "thresholds": {},
                 }
             },
             "system": {"concurrency": 1},
             "ai": {"max_concurrency": 1},
             "paths": {
-                "db_file": os.getenv("STOCK_TEST_DB_PATH")
-            },  # Explicitly set DB path though Env handles it
-            # Need to provide scoring_v2 for calculator if used
-            # Need to provide scoring_v2 for calculator if used
+                "db_file": test_db_path,
+                "output_dir": test_out_dir,
+            },
             "scoring_v2": {"styles": {"default": {}}},
         }
+
+        # Patch ConfigLoader to return our test_config
+        with patch("src.orchestrator.ConfigLoader") as mock_cfg_loader_cls:
+            mock_cfg_loader = MagicMock()
+            mock_cfg_loader.config = test_config
+            mock_cfg_loader_cls.return_value = mock_cfg_loader
+
+            orchestrator = Orchestrator(debug_mode=True)
+            # Ensure internal config is set
+            orchestrator.config = test_config
+
         # Mock subprocess.run to execute analysis in-process so it sees our mocked config
         # and runs in the same environment (mocked DB path etc)
         # Also patch yfinance to prevent potential fetch attempts in Fallback/Enrichment
@@ -220,26 +234,26 @@ class TestSentinelOrchestratorIntegration:
             mock_yf.side_effect = Exception("Network blocked in test")
 
             def run_analysis_in_process(cmd, **kwargs):
-                # cmd list: [python, equity_auditor.py, --mode, analyze, --codes, X, --strategy, Y]
-                if "equity_auditor.py" in cmd and "analyze" in cmd:
-                    try:
-                        idx_codes = cmd.index("--codes") + 1
-                        codes_str = cmd[idx_codes]
-                        codes = codes_str.split(",")
+                import subprocess
 
-                        idx_strat = cmd.index("--strategy") + 1
-                        strategy = cmd[idx_strat]
+                from src.commands.analyze import AnalyzeCommand
 
-                        from src.commands.analyze import AnalyzeCommand
+                args = cmd
+                codes = []
+                strategy = "Balanced Strategy"
+                if "--codes" in args:
+                    idx = args.index("--codes")
+                    codes = args[idx + 1].split(",")
+                if "--strategy" in args:
+                    idx_strat = args.index("--strategy")
+                    strategy = args[idx_strat + 1]
 
-                        # Use the SAME config as orchestrator
-                        analyze_cmd = AnalyzeCommand(
-                            config=orchestrator.config, debug_mode=True
-                        )
-                        analyze_cmd.execute(codes=codes, strategy=strategy)
-                    except Exception as e:
-                        print(f"In-process analysis failed: {e}")
-                        raise e
+                # Use the SAME config as orchestrator
+                analyze_cmd = AnalyzeCommand(
+                    config=orchestrator.config, debug_mode=True
+                )
+                analyze_cmd.execute(codes=codes, strategy=strategy)
+
                 return subprocess.CompletedProcess(args=cmd, returncode=0)
 
             mock_run.side_effect = run_analysis_in_process
@@ -249,10 +263,9 @@ class TestSentinelOrchestratorIntegration:
 
         # 3. Verify Report
         from pathlib import Path
-
+    
         # Use the overridden output path
-        output_dir_str = os.getenv("STOCK_TEST_OUTPUT_PATH", "data/output")
-        output_dir = Path(output_dir_str)
+        output_dir = Path(test_out_dir)
         report_files = list(output_dir.glob("daily_report_*.csv"))
         assert len(report_files) > 0, "No daily report generated"
 

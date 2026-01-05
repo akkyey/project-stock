@@ -1,0 +1,2 @@
+﻿Rank,Code,Name,Sector,Market,AI_Rating,AI_Score,AI_Comment,AI_Detailed_Analysis,AI_Risk,AI_Horizon,PER,PBR,ROE,Div_Yield,Sales_Gro,Prof_Gro,Op_Margin,Equity_Rat,Market_Cap,RSI,MACD_Hist,Volatility,Sc_Value,Sc_Growth,Sc_Quality,Sc_Trend,Sc_Penalty,Report_Timestamp,Original_Strat
+1,8888,OrchCorp,Tech,Prime,Neutral (Positive),15.00,【結論】MOCK ANALYSIS: データ不備なし。安定成長を期待。,これはデバッグモード用のモックレスポンスです。,Low (Reason: Mock),Wait,15.0,1.5,10.0,-,-,-,10.0,50.0,-,-,0.5,0.2,0.0,0.0,0.0,50.0,0.0,2026-01-05 16:59:37,Balanced Strategy

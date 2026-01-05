@@ -1,0 +1,192 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /mnt/d/dev2/project-stock2/venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /mnt/d/dev2/project-stock2
+configfile: pytest.ini
+plugins: anyio-4.12.0, cov-7.0.0
+collecting ... collected 13 items
+
+tests/test_commands.py::TestExtractCommand::test_execute_no_candidates PASSED
+tests/test_commands.py::TestExtractCommand::test_execute_with_candidates Extracting Tasks:   0%|          | 0/1 [00:00<?, ?it/s]Extracting Tasks: 100%|██████████| 1/1 [00:00<00:00, 2183.40it/s]
+PASSED
+tests/test_commands.py::TestAnalyzeCommand::test_execute_no_candidates PASSED
+tests/test_commands.py::TestAnalyzeCommand::test_execute_processes_candidates AI Analysis (Cncr=2):   0%|          | 0/1 [00:00<?, ?it/s]AI Analysis (Cncr=2): 100%|██████████| 1/1 [00:00<00:00, 26.48it/s]
+PASSED
+tests/test_commands.py::TestIngestCommand::test_execute_ingest_valid_json PASSED
+tests/test_commands.py::TestIngestCommand::test_execute_no_files PASSED
+tests/test_commands.py::TestIngestCommand::test_export_to_csv_chunking PASSED
+tests/test_commands.py::TestIngestCommand::test_export_to_csv_no_results PASSED
+tests/test_commands.py::TestIngestCommand::test_export_to_csv_with_data PASSED
+tests/test_sentinel_orchestrator_integration.py::TestSentinelOrchestratorIntegration::test_sentinel_alert_generation DEBUG: Initial Stock and AnalysisResult created.
+PASSED
+tests/test_sentinel_orchestrator_integration.py::TestSentinelOrchestratorIntegration::test_orchestrator_daily_flow DEBUG: [Setup] Created AR ID: 1
+DEBUG: [Setup] AnalysisResult count: 1
+DEBUG: [Setup] DB Path via models: tests/test_stock_master.db
+DEBUG: Reporter Output Dir: data/output
+DEBUG: [Analysis] DB Path via models: data/stock_master.db
+DEBUG: [Analysis] AnalysisResult count in DB: 0
+FAILED
+tests/test_sentinel_orchestrator_integration.py::TestSentinelOrchestratorIntegration::test_orchestrator_weekly_flow DEBUG: Reporter Output Dir: data/output
+DEBUG: Saving Summary to data/output/weekly_report_20260105_1656.csv
+PASSED
+tests/test_sentinel_orchestrator_integration.py::TestSentinelOrchestratorIntegration::test_orchestrator_balanced_refresh DEBUG: Reporter Output Dir: data/output
+PASSED
+
+=================================== FAILURES ===================================
+_______ TestSentinelOrchestratorIntegration.test_orchestrator_daily_flow _______
+
+self = <test_sentinel_orchestrator_integration.TestSentinelOrchestratorIntegration object at 0x7d501e339f70>
+
+    def test_orchestrator_daily_flow(self):
+        """Verify Orchestrator processes alerts and generates report."""
+    
+        # 1. Setup Alerts
+        SentinelAlert.create(
+            code="8888",
+            alert_type="volatility",
+            alert_message="Test Volatility",
+            detected_at=get_current_time(),
+        )
+    
+        # 2. Setup Analysis Result for Reporting
+        with db_proxy.atomic():
+            Stock.create(code="8888", name="OrchCorp", sector="Tech", market="Prime")
+            md = MarketData.create(
+                code="8888",
+                price=2000,
+                trend_score=3,
+                macd_hist=0.5,
+                # Essential financial data for validation
+                sales=10000,
+                operating_cf=1000,
+                operating_margin=10.0,
+                debt_equity_ratio=0.5,
+                free_cf=500.0,
+                volatility=0.2,
+                roe=10.0,
+                per=15.0,
+                pbr=1.5,
+                equity_ratio=50.0,
+                entry_date="2025-01-01",
+            )
+            # 4. Create an older analysis result (manual)
+            # Use 'Balanced Strategy' to match orchestrator config
+            ar = AnalysisResult.create(
+                market_data=md,
+                strategy_name="Balanced Strategy",
+                quant_score=85,
+                ai_sentiment="Bullish",
+                analyzed_at=get_current_time() - timedelta(days=1),  # Yesterday
+            )
+            print(f"DEBUG: [Setup] Created AR ID: {ar.id}")
+            print(
+                f"DEBUG: [Setup] AnalysisResult count: {AnalysisResult.select().count()}"
+            )
+            print(f"DEBUG: [Setup] DB Path via models: {db_proxy.database}")
+    
+        # Prepare Config
+        test_config = {
+            "strategies": {
+                "Balanced Strategy": {
+                    "base_score": 0,
+                    "min_requirements": {},
+                    "thresholds": {},
+                }
+            },
+            "system": {"concurrency": 1},
+            "ai": {"max_concurrency": 1},
+            "paths": {
+                "db_file": os.getenv("STOCK_TEST_DB_PATH"),
+                "output_dir": os.getenv("STOCK_TEST_OUTPUT_PATH", "data/output"),
+            },
+            "scoring_v2": {"styles": {"default": {}}},
+        }
+    
+        # Patch ConfigLoader to return our test_config
+        with patch("src.orchestrator.ConfigLoader") as mock_cfg_loader_cls:
+            mock_cfg_loader = MagicMock()
+            mock_cfg_loader.config = test_config
+            mock_cfg_loader_cls.return_value = mock_cfg_loader
+    
+            orchestrator = Orchestrator(debug_mode=True)
+            # Ensure internal config is set
+            orchestrator.config = test_config
+    
+        # Mock subprocess.run to execute analysis in-process so it sees our mocked config
+        # and runs in the same environment (mocked DB path etc)
+        # Also patch yfinance to prevent potential fetch attempts in Fallback/Enrichment
+        with (
+            patch("src.orchestrator.subprocess.run") as mock_run,
+            patch("yfinance.download") as mock_yf,
+        ):
+    
+            mock_yf.side_effect = Exception("Network blocked in test")
+    
+            def run_analysis_in_process(cmd, **kwargs):
+                import subprocess
+    
+                from src.commands.analyze import AnalyzeCommand
+    
+                args = cmd
+                codes = []
+                strategy = "Balanced Strategy"
+                if "--codes" in args:
+                    idx = args.index("--codes")
+                    codes = args[idx + 1].split(",")
+                if "--strategy" in args:
+                    idx_strat = args.index("--strategy")
+                    strategy = args[idx_strat + 1]
+    
+                # Use the SAME config as orchestrator
+                analyze_cmd = AnalyzeCommand(
+                    config=orchestrator.config, debug_mode=True
+                )
+                analyze_cmd.execute(codes=codes, strategy=strategy)
+    
+                # DEBUG: Check DB after analysis
+                from src.models import db_proxy
+                print(f"DEBUG: [Analysis] DB Path via models: {db_proxy.database}")
+                count = AnalysisResult.select().count()
+                print(f"DEBUG: [Analysis] AnalysisResult count in DB: {count}")
+                for r in AnalysisResult.select():
+                    print(
+                        f"  Result: Code={r.market_data.code_id}, Strat={r.strategy_name}, At={r.analyzed_at}"
+                    )
+    
+                return subprocess.CompletedProcess(args=cmd, returncode=0)
+    
+            mock_run.side_effect = run_analysis_in_process
+    
+            # Run Daily
+            orchestrator.run("daily")
+    
+        # 3. Verify Report
+        from pathlib import Path
+    
+        # Use the overridden output path
+        output_dir_str = os.getenv("STOCK_TEST_OUTPUT_PATH", "data/output")
+        output_dir = Path(output_dir_str)
+        report_files = list(output_dir.glob("daily_report_*.csv"))
+>       assert len(report_files) > 0, "No daily report generated"
+E       AssertionError: No daily report generated
+E       assert 0 > 0
+E        +  where 0 = len([])
+
+tests/test_sentinel_orchestrator_integration.py:283: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  src.orchestrator:orchestrator.py:104 [1] 01-05 16:56 volatility: 8888 - Test Volatility
+ERROR    src.sentinel:sentinel.py:139 バッチ取得に失敗しました: Network blocked in test
+WARNING  src.orchestrator:orchestrator.py:570 対象となる分析結果が見つかりませんでした。
+=============================== warnings summary ===============================
+tests/test_commands.py::TestAnalyzeCommand::test_execute_processes_candidates
+  /mnt/d/dev2/project-stock2/stock-analyzer4/src/domain/models.py:40: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class StockAnalysisData(BaseModel):
+
+tests/test_commands.py::TestAnalyzeCommand::test_execute_processes_candidates
+  /mnt/d/dev2/project-stock2/stock-analyzer4/src/commands/analyze.py:396: DeprecationWarning: ValidationEngine.is_abnormal() is deprecated. Use StockAnalysisData.validation_flags.skip_reasons instead.
+    is_abnormal, reasons = val_engine.is_abnormal(row_dict)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_sentinel_orchestrator_integration.py::TestSentinelOrchestratorIntegration::test_orchestrator_daily_flow
+================== 1 failed, 12 passed, 2 warnings in 21.00s ===================

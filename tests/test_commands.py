@@ -74,12 +74,14 @@ class TestExtractCommand(unittest.TestCase):
         cmd.execute(strategy="test_strategy", limit=5)
 
     @patch("src.engine.AnalysisEngine")
-    @patch("src.provider.DataProvider")
-    @patch("src.database.StockDatabase")
+    @patch("src.commands.base_command.DataProvider")
+    @patch("src.commands.base_command.StockDatabase")
     @patch("src.commands.extract.AIAgent")
     @patch("src.commands.extract.ValidationEngine")
+    @patch("asyncio.to_thread")
     def test_execute_with_candidates(
         self,
+        mock_to_thread,
         mock_validator_cls,
         mock_agent_cls,
         mock_db_cls,
@@ -87,6 +89,11 @@ class TestExtractCommand(unittest.TestCase):
         mock_engine_cls,
     ):
         """execute should process candidates and save valid tasks."""
+        # Setup to_thread to run sync but be awaitable
+        async def mock_to_thread_side_effect(f, *args, **kwargs):
+            return f(*args, **kwargs)
+        mock_to_thread.side_effect = mock_to_thread_side_effect
+
         from src.commands.extract import ExtractCommand
 
         # Setup mocks
@@ -98,6 +105,13 @@ class TestExtractCommand(unittest.TestCase):
                     "quant_score": 80,
                     "sector": "Tech",
                     "market_data_id": 1,
+                    # Tier 1 Required
+                    "current_price": 1000,
+                    "operating_cf": 500,
+                    "operating_margin": 10,
+                    "per": 15,
+                    "pbr": 1.2,
+                    "roe": 10,
                 }
             ]
         )
@@ -166,12 +180,14 @@ class TestAnalyzeCommand(unittest.TestCase):
         # Should not raise
 
     @patch("src.engine.AnalysisEngine")
-    @patch("src.provider.DataProvider")
-    @patch("src.database.StockDatabase")
+    @patch("src.commands.base_command.DataProvider")
+    @patch("src.commands.base_command.StockDatabase")
     @patch("src.commands.analyze.AIAgent")
     @patch("src.commands.analyze.ResultWriter")
+    @patch("asyncio.to_thread")
     def test_execute_processes_candidates(
         self,
+        mock_to_thread,
         mock_writer_cls,
         mock_agent_cls,
         mock_db_cls,
@@ -179,6 +195,11 @@ class TestAnalyzeCommand(unittest.TestCase):
         mock_engine_cls,
     ):
         """execute should process candidates with AI agent and save results."""
+        # Setup to_thread to run sync but be awaitable
+        async def mock_to_thread_side_effect(f, *args, **kwargs):
+            return f(*args, **kwargs)
+        mock_to_thread.side_effect = mock_to_thread_side_effect
+
         from src.commands.analyze import AnalyzeCommand
 
         # Mocks
@@ -190,6 +211,15 @@ class TestAnalyzeCommand(unittest.TestCase):
                     "quant_score": 75,
                     "sector": "Retail",
                     "market_data_id": 2,
+                    # Tier 1 Required
+                    "current_price": 2000,
+                    "operating_cf": 1000,
+                    "operating_margin": 15,
+                    "per": 12,
+                    "pbr": 1.5,
+                    "roe": 12,
+                    "ocf_margin": 10,
+                    "equity_ratio": 50,  # [v2.0] used in is_abnormal
                 }
             ]
         )

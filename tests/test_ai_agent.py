@@ -194,33 +194,37 @@ class TestAIAgent(unittest.TestCase):
         # --- Cleanup ---
         os.remove("market_context.txt")
 
-    def test_create_prompt_without_market_context(self):
+    @patch("os.path.exists")
+    def test_create_prompt_without_market_context(self, mock_exists):
         """市場コンテキストファイルが存在しない場合のプロンプト生成テスト"""
-        # market_context.txt を削除（存在しないことを確認）
-        try:
-            os.remove("market_context.txt")
-        except OSError:
-            pass  # ファイルが存在しない場合は何もしない
+        # 全ての探索パス（market_context.txt関連）に対して False を返すように設定
+        # ただし config/ai_prompts.yaml 等は存在する必要がある
+        def side_effect(path):
+            if "market_context.txt" in path:
+                return False
+            return os.path.original_exists(path) if hasattr(os, "original_exists") else True
 
-        # --- Test Data ---
-        row_data = {
-            "code": "1111",
-            "name": "NoContext Stock",
-            "sector": "Service",
-            "current_price": 2000,
-            "per": 15,
-            # 他のデータは省略
-        }
-        strategy_name = "Momentum"
+        # Note: os.path.exists をパッチすると無限ループや他の不具合のリスクがあるため、
+        # より安全に "ai.prompt_builder.os.path.exists" をパッチします。
+        with patch("src.ai.prompt_builder.os.path.exists") as mock_p_exists:
+            mock_p_exists.side_effect = lambda p: False if "market_context.txt" in p else os.path.exists(p)
 
-        # --- Execution ---
-        prompt = self.ai_agent_debug._create_prompt(row_data, strategy_name)
+            # --- Test Data ---
+            row_data = {
+                "code": "1111",
+                "name": "NoContext Stock",
+                "sector": "Service",
+                "current_price": 2000,
+                "per": 15,
+            }
+            strategy_name = "Momentum"
 
-        # --- Assertions (日本語プロンプト形式に対応) ---
-        # マーケットコンテキストなしのデフォルトメッセージが含まれること
-        self.assertIn("No specific market context available", prompt)
-        # コード情報が含まれること
-        self.assertIn("1111", prompt)
+            # --- Execution ---
+            prompt = self.ai_agent_debug._create_prompt(row_data, strategy_name)
+
+            # --- Assertions ---
+            self.assertIn("No specific market context available", prompt)
+            self.assertIn("1111", prompt)
 
     def test_ai_agent_debug_mode(self):
         """デバッグモードでAIエージェントがモックレスポンスを返すテスト (新形式対応)"""

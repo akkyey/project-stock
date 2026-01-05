@@ -1,0 +1,360 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /mnt/d/dev2/project-stock2/venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /mnt/d/dev2/project-stock2
+configfile: pytest.ini
+plugins: anyio-4.12.0, cov-7.0.0
+collecting ... collected 13 items
+
+tests/test_commands.py::TestExtractCommand::test_execute_no_candidates PASSED
+tests/test_commands.py::TestExtractCommand::test_execute_with_candidates FAILED
+tests/test_commands.py::TestAnalyzeCommand::test_execute_no_candidates PASSED
+tests/test_commands.py::TestAnalyzeCommand::test_execute_processes_candidates FAILED
+tests/test_commands.py::TestIngestCommand::test_execute_ingest_valid_json PASSED
+tests/test_commands.py::TestIngestCommand::test_execute_no_files PASSED
+tests/test_commands.py::TestIngestCommand::test_export_to_csv_chunking PASSED
+tests/test_commands.py::TestIngestCommand::test_export_to_csv_no_results PASSED
+tests/test_commands.py::TestIngestCommand::test_export_to_csv_with_data PASSED
+tests/test_sentinel_orchestrator_integration.py::TestSentinelOrchestratorIntegration::test_sentinel_alert_generation PASSED
+tests/test_sentinel_orchestrator_integration.py::TestSentinelOrchestratorIntegration::test_orchestrator_daily_flow DEBUG: Reporter Output Dir: data/output
+DEBUG: AnalysisResult count in DB: 0
+FAILED
+tests/test_sentinel_orchestrator_integration.py::TestSentinelOrchestratorIntegration::test_orchestrator_weekly_flow DEBUG: Reporter Output Dir: data/output
+DEBUG: Saving Summary to data/output/weekly_report_20260105_1650.csv
+PASSED
+tests/test_sentinel_orchestrator_integration.py::TestSentinelOrchestratorIntegration::test_orchestrator_balanced_refresh DEBUG: Reporter Output Dir: data/output
+PASSED
+
+=================================== FAILURES ===================================
+_______________ TestExtractCommand.test_execute_with_candidates ________________
+
+self = <test_commands.TestExtractCommand testMethod=test_execute_with_candidates>
+mock_to_thread = <AsyncMock name='to_thread' id='131476876532848'>
+mock_validator_cls = <MagicMock name='ValidationEngine' id='131476858073600'>
+mock_agent_cls = <MagicMock name='AIAgent' id='131476858143328'>
+mock_db_cls = <MagicMock name='StockDatabase' id='131476858147120'>
+mock_provider_cls = <MagicMock name='DataProvider' id='131476858150912'>
+mock_engine_cls = <MagicMock name='AnalysisEngine' id='131476858154704'>
+
+    @patch("src.engine.AnalysisEngine")
+    @patch("src.provider.DataProvider")
+    @patch("src.database.StockDatabase")
+    @patch("src.commands.extract.AIAgent")
+    @patch("src.commands.extract.ValidationEngine")
+    @patch("asyncio.to_thread")
+    def test_execute_with_candidates(
+        self,
+        mock_to_thread,
+        mock_validator_cls,
+        mock_agent_cls,
+        mock_db_cls,
+        mock_provider_cls,
+        mock_engine_cls,
+    ):
+        """execute should process candidates and save valid tasks."""
+        # Setup to_thread to run sync but be awaitable
+        async def mock_to_thread_side_effect(f, *args, **kwargs):
+            return f(*args, **kwargs)
+        mock_to_thread.side_effect = mock_to_thread_side_effect
+    
+        from src.commands.extract import ExtractCommand
+    
+        # Setup mocks
+        df = pd.DataFrame(
+            [
+                {
+                    "code": "1001",
+                    "name": "Test",
+                    "quant_score": 80,
+                    "sector": "Tech",
+                    "market_data_id": 1,
+                    # Tier 1 Required
+                    "current_price": 1000,
+                    "operating_cf": 500,
+                    "operating_margin": 10,
+                    "per": 15,
+                    "pbr": 1.2,
+                    "roe": 10,
+                }
+            ]
+        )
+        mock_provider = MagicMock()
+        mock_provider.load_latest_market_data.return_value = df
+        mock_provider.stock_db = MagicMock()
+        mock_provider_cls.return_value = mock_provider
+    
+        mock_db = MagicMock()
+        mock_db.get_ai_cache.return_value = None
+        mock_db.get_market_data_id.return_value = 1
+        mock_db_cls.return_value = mock_db
+    
+        mock_agent = MagicMock()
+        mock_agent._create_prompt.return_value = "Test Prompt"
+        mock_agent_cls.return_value = mock_agent
+    
+        mock_validator = MagicMock()
+        mock_validator.validate.return_value = (True, None)  # Valid
+        mock_validator_cls.return_value = mock_validator
+    
+        mock_engine = MagicMock()
+        mock_engine.calculate_scores.return_value = df
+        mock_engine.filter_and_rank.return_value = df
+        mock_engine_cls.return_value = mock_engine
+    
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cmd = ExtractCommand(get_mock_config(), debug_mode=True)
+            cmd.interim_dir = tmpdir
+            output_path = os.path.join(tmpdir, "test_output.json")
+    
+            cmd.execute(strategy="test_strategy", limit=5, output_path=output_path)
+    
+            # Verify output file exists
+>           self.assertTrue(os.path.exists(output_path))
+E           AssertionError: False is not true
+
+tests/test_commands.py:149: AssertionError
+_____________ TestAnalyzeCommand.test_execute_processes_candidates _____________
+
+self = <test_commands.TestAnalyzeCommand testMethod=test_execute_processes_candidates>
+mock_to_thread = <AsyncMock name='to_thread' id='131476858310912'>
+mock_writer_cls = <MagicMock name='ResultWriter' id='131476858722720'>
+mock_agent_cls = <MagicMock name='AIAgent' id='131476858729680'>
+mock_db_cls = <MagicMock name='StockDatabase' id='131476858668000'>
+mock_provider_cls = <MagicMock name='DataProvider' id='131476858671936'>
+mock_engine_cls = <MagicMock name='AnalysisEngine' id='131476858675728'>
+
+    @patch("src.engine.AnalysisEngine")
+    @patch("src.provider.DataProvider")
+    @patch("src.database.StockDatabase")
+    @patch("src.commands.analyze.AIAgent")
+    @patch("src.commands.analyze.ResultWriter")
+    @patch("asyncio.to_thread")
+    def test_execute_processes_candidates(
+        self,
+        mock_to_thread,
+        mock_writer_cls,
+        mock_agent_cls,
+        mock_db_cls,
+        mock_provider_cls,
+        mock_engine_cls,
+    ):
+        """execute should process candidates with AI agent and save results."""
+        # Setup to_thread to run sync but be awaitable
+        async def mock_to_thread_side_effect(f, *args, **kwargs):
+            return f(*args, **kwargs)
+        mock_to_thread.side_effect = mock_to_thread_side_effect
+    
+        from src.commands.analyze import AnalyzeCommand
+    
+        # Mocks
+        df = pd.DataFrame(
+            [
+                {
+                    "code": "2001",
+                    "name": "AnalyzeTest",
+                    "quant_score": 75,
+                    "sector": "Retail",
+                    "market_data_id": 2,
+                    # Tier 1 Required
+                    "current_price": 2000,
+                    "operating_cf": 1000,
+                    "operating_margin": 15,
+                    "per": 12,
+                    "pbr": 1.5,
+                    "roe": 12,
+                    "ocf_margin": 10,
+                    "equity_ratio": 50,  # [v2.0] used in is_abnormal
+                }
+            ]
+        )
+    
+        mock_provider = MagicMock()
+        mock_provider.load_latest_market_data.return_value = df
+        mock_provider.get_ai_cache.return_value = (None, "hash123")  # No cache
+        mock_provider.stock_db = MagicMock()
+        mock_provider_cls.return_value = mock_provider
+    
+        mock_db = MagicMock()
+        mock_db_cls.return_value = mock_db
+    
+        mock_agent = MagicMock()
+        mock_agent.analyze.return_value = {
+            "ai_sentiment": "Bullish",
+            "ai_reason": "Good",
+        }
+        mock_agent.get_total_calls.return_value = 0
+        mock_agent_cls.return_value = mock_agent
+    
+        mock_writer = MagicMock()
+        mock_writer_cls.return_value = mock_writer
+    
+        mock_engine = MagicMock()
+        mock_engine.calculate_scores.return_value = df
+        mock_engine.filter_and_rank.return_value = df
+        mock_engine_cls.return_value = mock_engine
+    
+        cmd = AnalyzeCommand(get_mock_config(), debug_mode=True)
+        cmd.execute(strategy="test_strategy", limit=1)
+    
+        # Verify AI analyze was called
+>       mock_agent.analyze.assert_called_once()
+
+tests/test_commands.py:256: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <MagicMock name='AIAgent().analyze' id='131476858619616'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'analyze' to have been called once. Called 0 times.
+
+/usr/lib/python3.12/unittest/mock.py:923: AssertionError
+_______ TestSentinelOrchestratorIntegration.test_orchestrator_daily_flow _______
+
+self = <test_sentinel_orchestrator_integration.TestSentinelOrchestratorIntegration object at 0x7793d8792720>
+
+    def test_orchestrator_daily_flow(self):
+        """Verify Orchestrator processes alerts and generates report."""
+    
+        # 1. Setup Alerts
+        SentinelAlert.create(
+            code="8888",
+            alert_type="volatility",
+            alert_message="Test Volatility",
+            detected_at=get_current_time(),
+        )
+    
+        # 2. Setup Analysis Result for Reporting
+        with db_proxy.atomic():
+            Stock.create(code="8888", name="OrchCorp", sector="Tech", market="Prime")
+            md = MarketData.create(
+                code="8888",
+                price=2000,
+                trend_score=3,
+                macd_hist=0.5,
+                # Essential financial data for validation
+                sales=10000,
+                operating_cf=1000,
+                operating_margin=10.0,
+                debt_equity_ratio=0.5,
+                free_cf=500.0,
+                volatility=0.2,
+                roe=10.0,
+                per=15.0,
+                pbr=1.5,
+                equity_ratio=50.0,
+                entry_date="2025-01-01",
+            )
+            # 4. Create an older analysis result (manual)
+            # Use 'Balanced Strategy' to match orchestrator config
+            AnalysisResult.create(
+                market_data=md,
+                strategy_name="Balanced Strategy",
+                quant_score=85,
+                ai_sentiment="Bullish",
+                analyzed_at=get_current_time(),
+            )
+    
+        # Prepare Config
+        test_config = {
+            "strategies": {
+                "Balanced Strategy": {
+                    "base_score": 0,
+                    "min_requirements": {},
+                    "thresholds": {},
+                }
+            },
+            "system": {"concurrency": 1},
+            "ai": {"max_concurrency": 1},
+            "paths": {
+                "db_file": os.getenv("STOCK_TEST_DB_PATH"),
+                "output_dir": os.getenv("STOCK_TEST_OUTPUT_PATH", "data/output"),
+            },
+            "scoring_v2": {"styles": {"default": {}}},
+        }
+    
+        # Patch ConfigLoader to return our test_config
+        with patch("src.orchestrator.ConfigLoader") as mock_cfg_loader_cls:
+            mock_cfg_loader = MagicMock()
+            mock_cfg_loader.config = test_config
+            mock_cfg_loader_cls.return_value = mock_cfg_loader
+    
+            orchestrator = Orchestrator(debug_mode=True)
+            # Ensure internal config is set
+            orchestrator.config = test_config
+    
+        # Mock subprocess.run to execute analysis in-process so it sees our mocked config
+        # and runs in the same environment (mocked DB path etc)
+        # Also patch yfinance to prevent potential fetch attempts in Fallback/Enrichment
+        with (
+            patch("src.orchestrator.subprocess.run") as mock_run,
+            patch("yfinance.download") as mock_yf,
+        ):
+    
+            mock_yf.side_effect = Exception("Network blocked in test")
+    
+            def run_analysis_in_process(cmd, **kwargs):
+                import subprocess
+    
+                from src.commands.analyze import AnalyzeCommand
+    
+                args = cmd
+                codes = []
+                strategy = "Balanced Strategy"
+                if "--codes" in args:
+                    idx = args.index("--codes")
+                    codes = args[idx + 1].split(",")
+                if "--strategy" in args:
+                    idx_strat = args.index("--strategy")
+                    strategy = args[idx_strat + 1]
+    
+                # Use the SAME config as orchestrator
+                analyze_cmd = AnalyzeCommand(
+                    config=orchestrator.config, debug_mode=True
+                )
+                analyze_cmd.execute(codes=codes, strategy=strategy)
+    
+                # DEBUG: Check DB after analysis
+                count = AnalysisResult.select().count()
+                print(f"DEBUG: AnalysisResult count in DB: {count}")
+                for r in AnalysisResult.select():
+                    print(
+                        f"  Result: Code={r.market_data.code_id}, Strat={r.strategy_name}, At={r.analyzed_at}"
+                    )
+    
+                return subprocess.CompletedProcess(args=cmd, returncode=0)
+    
+            mock_run.side_effect = run_analysis_in_process
+    
+            # Run Daily
+            orchestrator.run("daily")
+    
+        # 3. Verify Report
+        from pathlib import Path
+    
+        # Use the overridden output path
+        output_dir_str = os.getenv("STOCK_TEST_OUTPUT_PATH", "data/output")
+        output_dir = Path(output_dir_str)
+        report_files = list(output_dir.glob("daily_report_*.csv"))
+>       assert len(report_files) > 0, "No daily report generated"
+E       AssertionError: No daily report generated
+E       assert 0 > 0
+E        +  where 0 = len([])
+
+tests/test_sentinel_orchestrator_integration.py:274: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  src.orchestrator:orchestrator.py:104 [1] 01-05 16:50 volatility: 8888 - Test Volatility
+ERROR    src.sentinel:sentinel.py:139 バッチ取得に失敗しました: Network blocked in test
+WARNING  src.orchestrator:orchestrator.py:570 対象となる分析結果が見つかりませんでした。
+=========================== short test summary info ============================
+FAILED tests/test_commands.py::TestExtractCommand::test_execute_with_candidates
+FAILED tests/test_commands.py::TestAnalyzeCommand::test_execute_processes_candidates
+FAILED tests/test_sentinel_orchestrator_integration.py::TestSentinelOrchestratorIntegration::test_orchestrator_daily_flow
+======================== 3 failed, 10 passed in 20.34s =========================
