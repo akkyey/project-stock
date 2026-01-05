@@ -1,0 +1,4 @@
+[submodule "stock-analyzer4"]
+	path = stock-analyzer4
+	url = https://github.com/akkyey/stock-analyzer
+	branch = feature/v12-setup-recovery
