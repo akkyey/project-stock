@@ -9,9 +9,11 @@ import json
 import os
 import tempfile
 import unittest
+from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
+import yaml
 
 
 class TestResponseParser(unittest.TestCase):
@@ -295,6 +297,295 @@ class TestValidationEngineNew(unittest.TestCase):
         self.assertEqual(len(result), 2)
 
 
-if __name__ == "__main__":
-    unittest.main()
+class TestResultWriterExtended(unittest.TestCase):
+    """result_writer.py の追加カバレッジテスト"""
+
+    def setUp(self):
+        self.config = {"paths": {"output_dir": tempfile.mkdtemp()}}
+
+    def test_refine_rating(self):
+        """AIレーティングの微調整ロジック"""
+        from src.result_writer import ResultWriter
+        writer = ResultWriter(self.config)
+        
+        # テストデータの組み合わせ
+        test_cases = [
+            ({"ai_sentiment": "Neutral", "ai_risk": "High"}, "Neutral (Caution)"),
+            ({"ai_sentiment": "Neutral", "ai_risk": "Low"}, "Neutral (Positive)"),
+            ({"ai_sentiment": "Neutral", "ai_risk": "Medium"}, "Neutral (Wait)"),
+            ({"ai_sentiment": "Bullish", "ai_reason": "これは例外的な措置です"}, "Bullish (Defensive)"),
+            ({"ai_sentiment": "Bullish", "ai_reason": "最高です"}, "Bullish (Aggressive)"),
+        ]
+
+        for row, expected in test_cases:
+            # 必要なカラムを追加
+            row_data = row.copy()
+            if "ai_reason" not in row_data:
+                row_data["ai_reason"] = ""
+            if "ai_risk" not in row_data:
+                row_data["ai_risk"] = "Low"  # デフォルト値を設定
+            row_data["code"] = "1111"
+            row_data["name"] = "Test"
+            
+            df = pd.DataFrame([row_data])
+            output_path = writer.save(df, f"rating_test_{expected.replace(' ', '_')}.csv")
+            
+            self.assertIsNotNone(output_path, "Save failed")
+            df_out = pd.read_csv(output_path)
+            self.assertEqual(df_out["AI_Rating"].iloc[0], expected)
+
+    def test_column_filtering(self):
+        """カラムのフィルタリングとリネーム"""
+        from src.result_writer import ResultWriter
+        writer = ResultWriter(self.config)
+        
+        data = {
+            "code": ["1111"],
+            "name": ["Test"],
+            "market_data_id": ["ignore"],
+            "unknown_col": ["keep"],
+            "ai_sentiment": ["Bullish"],
+            "ai_risk": ["Low"],
+            "ai_reason": ["comment"]
+        }
+        df = pd.DataFrame(data)
+        output_path = writer.save(df, "filter_test.csv")
+        self.assertIsNotNone(output_path)
+        df_out = pd.read_csv(output_path)
+        
+        self.assertNotIn("market_data_id", df_out.columns)
+        self.assertIn("unknown_col", df_out.columns)
+        self.assertIn("Code", df_out.columns)
+        self.assertIn("AI_Rating", df_out.columns)
+
+
+class TestConfigLoaderExtended(unittest.TestCase):
+    """config_loader.py の追加カバレッジテスト"""
+
+    def _get_valid_dummy_config(self):
+        return {
+            "current_strategy": "test",
+            "data": {"output_path": "data/output/result.csv", "jp_stock_list": "dummy.csv"},
+            "csv_mapping": {"col_map": {}, "numeric_cols": []},
+            "scoring": {"min_coverage_pct": 50},
+            "strategies": {},
+            "ai": {"model_name": "gemini-pro", "prompt_template": "dummy"},
+            "logging": {"level": "INFO"},
+            "api": {"wait_time": 1, "max_retries": 1, "timeout": 10}
+        }
+
+    def test_sync_macro_context(self):
+        """マーケットコンテキストの読み込み"""
+        from src.config_loader import ConfigLoader
+        
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_path = os.path.join(tmp_dir, "config.yaml")
+            context_path = os.path.join(tmp_dir, "market_context.txt")
+            
+            defaults = self._get_valid_dummy_config()
+            with open(config_path, "w") as f:
+                f.write(yaml.dump(defaults))
+            
+            with open(context_path, "w") as f:
+                f.write("[MACRO_SENTIMENT:bearish]\n[INTEREST_RATE:high]\n")
+            
+            loader = ConfigLoader(config_path)
+            
+            macro = loader.raw_config.get("scoring_v2", {}).get("macro", {})
+            self.assertEqual(macro.get("sentiment"), "bearish")
+            self.assertEqual(macro.get("interest_rate"), "high")
+
+    def test_ensure_directories(self):
+        """ディレクトリ自動生成"""
+        from src.config_loader import ConfigLoader
+        
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_path = os.path.join(tmp_dir, "config.yaml")
+            output_path = os.path.join(tmp_dir, "new_output", "result.csv")
+            db_file = os.path.join(tmp_dir, "new_db", "test.db")
+            
+            defaults = self._get_valid_dummy_config()
+            defaults["data"]["output_path"] = output_path
+            defaults["paths"] = {"db_file": db_file, "output_dir": os.path.dirname(output_path)}
+
+            with open(config_path, "w") as f:
+                f.write(yaml.dump(defaults))
+                
+            loader = ConfigLoader(config_path)
+            
+            self.assertTrue(os.path.exists(os.path.dirname(output_path)))
+            self.assertTrue(os.path.exists(os.path.dirname(db_file)))
+
+    def test_load_config_search_paths(self):
+        """設定ファイルの探索パスロジック"""
+        from src.config_loader import ConfigLoader
+        # 存在しないパスを指定して、デフォルトが返るか、あるいは探索ログが出るか
+        # ここでは実ファイルを作らずに _load_config の挙動を確認するのは難しい（副作用が強い）
+        # なので、ConfigLoaderの _load_config が {} を返すケース（ファイルなし）を確認
+        loader = ConfigLoader("non_existent_config.yaml")
+        # デフォルト値で初期化されることを確認
+        self.assertEqual(loader.raw_config["current_strategy"], "value_strict")
+
+
+class TestValidationEngineRecover(unittest.TestCase):
+    """validation_engine.py のカバレッジ回復テスト"""
+
+    def setUp(self):
+        self.config = {"validation": {"hard_cut": {"equity_ratio_min": 0, "pbr_max": 20}}}
+
+    def test_legacy_is_abnormal(self):
+        """非推奨メソッド is_abnormal の動作確認（カバレッジ維持）"""
+        from src.validation_engine import ValidationEngine
+        engine = ValidationEngine(self.config)
+        
+        # 異常値データ
+        row = {"equity_ratio": -5.0}
+        
+        # 警告が出ることを許容
+        import warnings
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            is_abnormal, reasons = engine.is_abnormal(row)
+            self.assertTrue(is_abnormal)
+            self.assertTrue(len(w) > 0)
+            self.assertIn("deprecated", str(w[0].message))
+
+    def test_validate_stock_data_comprehensive(self):
+        """validate_stock_data の網羅的テスト"""
+        from src.validation_engine import ValidationEngine
+        engine = ValidationEngine(self.config)
+        
+        # ケース1: 正常 (全ての必須フィールドを含む)
+        row_ok = {
+            "code": "1001", "name": "OK", "market": "Prime", "sector": "IT",
+            "current_price": 1000, "price": 1000,
+            "equity_ratio": 50.0, "pbr": 1.0, "per": 15.0, "roe": 10.0,
+            "dividend_yield": 2.5, "operating_margin": 10.0,
+            "sales_growth": 5.0, "operating_profit_growth": 5.0,
+            "operating_cf": 100.0
+        }
+        is_valid, issues = engine.validate_stock_data(row_ok)
+        self.assertTrue(is_valid)
+
+        # ケース2: 欠損データ (Critical Missing)
+        row_missing = {"code": "1002", "name": "Missing"}
+        is_valid, issues = engine.validate_stock_data(row_missing)
+        self.assertFalse(is_valid)
+        self.assertIn("Missing Critical", str(issues))
+
+
+class TestOrchestratorExtended(unittest.TestCase):
+    """orchestrator.py のカバレッジテスト"""
+
+    @patch("src.reporter.StockReporter")
+    @patch("src.orchestrator.Sentinel")
+    @patch("src.orchestrator.StockDatabase")
+    @patch("src.orchestrator.ConfigLoader")
+    def setUp(self, mock_loader_cls, mock_db_cls, mock_sentinel_cls, mock_reporter_cls):
+        self.mock_config = {
+            "strategies": {"test_strat": {}},
+            "paths": {"output_dir": "test_out"}
+        }
+        mock_loader_cls.return_value.config = self.mock_config
+        
+        from src.orchestrator import Orchestrator
+        self.orchestrator = Orchestrator(debug_mode=True)
+        self.orchestrator.logger = MagicMock()
+
+    @patch("src.orchestrator.get_current_time")
+    @patch("src.orchestrator.SentinelAlert")
+    def test_handshake_alerts(self, mock_alert_model, mock_time):
+        """ハンドシェイク: 未処理アラートがある場合"""
+        # 時間固定
+        now = datetime(2025, 1, 1, 12, 0, 0)
+        mock_time.return_value = now
+
+        # 未処理アラートのモック
+        mock_alert = MagicMock()
+        mock_alert.id = 1
+        mock_alert.detected_at = now - timedelta(days=2) # 期限切れ
+        mock_alert.alert_type = "Critical"
+        mock_alert.code = "9999"
+        
+        mock_alert_model.select.return_value.where.return_value.order_by.return_value.exists.return_value = True
+        mock_alert_model.select.return_value.where.return_value.order_by.return_value.__iter__.return_value = [mock_alert]
+        
+        self.orchestrator._handshake_procedure()
+        
+        # ログにCRITICALが出るか
+        self.orchestrator.logger.warning.assert_called()
+        args, _ = self.orchestrator.logger.warning.call_args
+        self.assertIn("CRITICAL", args[0])
+
+    @patch("src.orchestrator.AnalysisResult")
+    @patch("src.orchestrator.SentinelAlert")
+    @patch("src.orchestrator.Orchestrator._execute_equity_auditor")
+    @patch("src.orchestrator.Orchestrator._export_reports")
+    def test_run_daily_flow(self, mock_export, mock_exec, mock_alert, mock_result):
+        """Dailyルーチンのフロー確認"""
+        # バランス型ターゲット取得のモック
+        mock_result.select.return_value.join.return_value.where.return_value.order_by.return_value.limit.return_value = []
+        
+        # アラートあり
+        mock_alert_inst = MagicMock()
+        mock_alert_inst.code = "8888"
+        mock_alert_inst.alert_type = "Critical" # 追加
+        mock_alert.select.return_value.where.return_value = [mock_alert_inst]
+        
+        self.orchestrator._run_daily()
+        
+        # Sentinel実行
+        self.orchestrator.sentinel.run.assert_called()
+        # EquityAuditor実行 (アラート銘柄が対象になるはず)
+        mock_exec.assert_called()
+        args, _ = mock_exec.call_args
+        self.assertIn("8888", args[0])
+        # レポート出力
+        mock_export.assert_called_with(output_context="daily", source_map={"8888": "Alert(Critical)"})
+
+    @patch("src.orchestrator.subprocess.run")
+    def test_recover_db(self, mock_sub):
+        """DB自動修復プロセス"""
+        with patch("src.orchestrator.MarketData") as mock_md:
+            # 修復対象コード
+            mock_row = MagicMock()
+            mock_row.code_id = "1234"
+            mock_md.select.return_value.where.return_value = [mock_row]
+            
+            res = self.orchestrator._recover_db("2025-01-01")
+            
+            self.assertTrue(res)
+            mock_sub.assert_called()
+            # コマンド引数の確認
+            args, _ = mock_sub.call_args
+            cmd = args[0]
+            self.assertIn("ingest", cmd)
+            self.assertIn("--force", cmd)
+            self.assertIn("1234", cmd)
+
+    def test_check_db_integrity_empty(self):
+        """DB整合性チェック: データなし"""
+        with patch("src.orchestrator.MarketData") as mock_md:
+            mock_md.select.return_value.where.return_value.count.return_value = 0
+            res = self.orchestrator._check_db_integrity("2025-01-01")
+            self.assertTrue(res)
+
+    def test_check_db_integrity_broken(self):
+        """DB整合性チェック: 欠損あり"""
+        with patch("src.orchestrator.MarketData") as mock_md:
+            # 全体件数 10
+            mock_md.select.return_value.where.return_value.count.side_effect = [10, 5]
+            # 欠損件数 5 (2回目のselect)
+            # count()の戻り値を制御するのは難しいので、mockの構成を工夫
+            
+            # _check_db_integrityの実装は2回countを呼ぶ
+            # 1回目: total_count
+            # 2回目: null_count
+            
+            res = self.orchestrator._check_db_integrity("2025-01-01")
+            # null_count > 0 でも Warning のみで True を返す仕様
+            self.assertTrue(res)
+            self.orchestrator.logger.warning.assert_called()
+            args, _ = self.orchestrator.logger.warning.call_args
+            self.assertIn("Integrity Alert", args[0])
 
