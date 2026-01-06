@@ -6,31 +6,29 @@ import subprocess
 
 
 def is_git_tracked(filepath):
-    """Check if file is tracked by git."""
+    """Check if file is tracked by git, handling nested repositories."""
     try:
-        # Use git ls-files to check if file is tracked
-        # output will be empty if not tracked
-        subprocess.run(
-            ["git", "ls-files", filepath],
+        # 1. Find the closest .git directory
+        current_dir = os.path.dirname(os.path.abspath(filepath))
+        git_root = None
+        while current_dir != os.path.dirname(current_dir):  # Stop at root
+            if os.path.isdir(os.path.join(current_dir, ".git")):
+                git_root = current_dir
+                break
+            current_dir = os.path.dirname(current_dir)
+        
+        if not git_root:
+            # Fallback to current script's project root if no specific git root found
+            # (Though if we are not in a git repo at all, likely not tracked)
+            return False
+
+        # 2. Check strict with git ls-files from that root
+        rel_path = os.path.relpath(filepath, git_root)
+        res = subprocess.run(
+            ["git", "ls-files", rel_path],
             capture_output=True,
             text=True,
-            cwd=os.path.dirname(
-                os.path.abspath(__file__)
-            ),  # run from script dir or adjust
-        )
-        # Note: git ls-files output is relative to repo root usually.
-        # If run from subdir, it matches if file is tracked.
-        # Safer: run from project root.
-
-        # Let's run from the directory of the file being checked's repo root.
-        # Assuming project_root is the git root.
-        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-        # Relative path for git command
-        rel_path = os.path.relpath(filepath, root)
-
-        res = subprocess.run(
-            ["git", "ls-files", rel_path], capture_output=True, text=True, cwd=root
+            cwd=git_root
         )
         return bool(res.stdout.strip())
     except Exception:
@@ -72,6 +70,7 @@ def generate_full_context():
             ],
         ),
         ("Root Scripts", get_files("*.py")),
+        ("Stock Analyzer Scripts", get_files("stock-analyzer4/*.py")),
         (
             "Source Code (src)",
             get_files("stock-analyzer4/src/*.py") + get_files("stock-analyzer4/src/**/*.py"),

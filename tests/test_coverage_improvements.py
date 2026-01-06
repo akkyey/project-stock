@@ -245,15 +245,13 @@ class TestKeyManager(unittest.TestCase):
 
 
 class TestEngine(unittest.TestCase):
-    """engine.py のカバレッジ改善テスト"""
+    """engine.py のカバレッジ改善テスト (SKIP: src.engine は削除済み)"""
 
+    @unittest.skip("src.engine.AnalysisEngine は削除済み")
     def test_calculate_scores_empty_df(self):
         """空のDataFrame"""
-        from src.engine import AnalysisEngine
-        config = {"strategies": {}}
-        engine = AnalysisEngine(config)
-        result = engine.calculate_scores(pd.DataFrame(), "test")
-        self.assertTrue(result.empty)
+        pass
+
 
 
 class TestPromptBuilder(unittest.TestCase):
@@ -433,22 +431,10 @@ class TestValidationEngineRecover(unittest.TestCase):
     def setUp(self):
         self.config = {"validation": {"hard_cut": {"equity_ratio_min": 0, "pbr_max": 20}}}
 
+    @unittest.skip("is_abnormal method was removed from ValidationEngine")
     def test_legacy_is_abnormal(self):
         """非推奨メソッド is_abnormal の動作確認（カバレッジ維持）"""
-        from src.validation_engine import ValidationEngine
-        engine = ValidationEngine(self.config)
-        
-        # 異常値データ
-        row = {"equity_ratio": -5.0}
-        
-        # 警告が出ることを許容
-        import warnings
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            is_abnormal, reasons = engine.is_abnormal(row)
-            self.assertTrue(is_abnormal)
-            self.assertTrue(len(w) > 0)
-            self.assertIn("deprecated", str(w[0].message))
+        pass
 
     def test_validate_stock_data_comprehensive(self):
         """validate_stock_data の網羅的テスト"""

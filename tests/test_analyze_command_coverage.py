@@ -113,7 +113,7 @@ class TestAnalyzeCommandCoverage(unittest.TestCase):
     @patch("src.commands.analyze.AIAgent")
     @patch("src.commands.analyze.ResultWriter")
     @patch("src.commands.base_command.DataProvider")
-    @patch("src.domain.models.StockAnalysisData")
+    @patch("src.commands.analyze.StockAnalysisData")
     def test_guardrail_abnormal_skip(
         self, mock_stock_data_cls, mock_provider_cls, mock_writer_cls, mock_agent_cls
     ):
@@ -266,13 +266,13 @@ class TestAnalyzeCommandExtended(unittest.TestCase):
             [{"code": "1001"}]
         )
 
-        with patch("src.engine.AnalysisEngine") as mock_eng_cls:
+        with patch("src.commands.analyze.ScoringEngine") as mock_eng_cls:
             mock_eng = mock_eng_cls.return_value
-            mock_eng.calculate_scores.return_value = pd.DataFrame(
-                [{"code": "1001", "score": 10}]
+            mock_eng.calculate_score.return_value = pd.DataFrame(
+                [{"code": "1001", "quant_score": 10}]
             )
             mock_eng.filter_and_rank.return_value = pd.DataFrame(
-                [{"code": "1001", "score": 10}]
+                [{"code": "1001", "quant_score": 10}]
             )
 
             res = cmd._fetch_candidates_df_logic("test_strat", limit=10)

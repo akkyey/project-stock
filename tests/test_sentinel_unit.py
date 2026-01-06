@@ -15,7 +15,7 @@ class TestSentinelUnit:
             patch("src.sentinel.ConfigLoader"),
             patch("src.sentinel.StockDatabase"),
             patch("src.sentinel.DataFetcher"),
-            patch("src.sentinel.AnalysisEngine"),
+            patch("src.sentinel.ScoringEngine"),
         ):
             s = Sentinel(debug_mode=True)
             # Mock internal logger
@@ -115,7 +115,7 @@ class TestSentinelUnit:
                     # So NewEntrant is Rank 1, Old1 is Rank 2.
                 ]
             )
-            sentinel.engine.calculate_scores.return_value = scored_df
+            sentinel.engine.calculate_score.return_value = scored_df
 
             # Data map for loop trigger
             data_map = {"Old1": {"price": 100}, "NewEntrant": {"price": 50}}
