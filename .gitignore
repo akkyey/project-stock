@@ -9,6 +9,7 @@ venv/
 .coverage
 htmlcov/
 .pytest_cache/
+tests/data/output/
 
 # Auto-generated context and logs
 full_context/*.md
@@ -25,6 +26,12 @@ stock-analyzer4/
 
 # Parent level logs/temp
 *.log
+debug_*.txt
 
 # Git temporary files
 .git_commit_msg
+
+# Data and Artifacts
+*.db
+.vscode/
+data/output/
