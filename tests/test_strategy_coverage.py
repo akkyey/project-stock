@@ -1,7 +1,6 @@
 import unittest
 
 import pandas as pd
-
 from src.calc.strategies.base import BaseStrategy
 from src.calc.strategies.turnaround import TurnaroundStrategy
 

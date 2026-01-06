@@ -1,6 +1,4 @@
-import numpy as np
 import pytest
-
 from src.validation_engine import ValidationEngine
 
 

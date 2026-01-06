@@ -3,7 +3,6 @@ import os
 
 import google.generativeai as genai
 import yfinance as yf
-
 from src.config_loader import load_config
 
 # --- AI初期化 ---

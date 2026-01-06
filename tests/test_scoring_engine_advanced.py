@@ -1,6 +1,5 @@
 import pandas as pd
 import pytest
-
 from src.calc.engine import ScoringEngine
 from src.calc.strategies.base import BaseStrategy
 

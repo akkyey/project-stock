@@ -6,7 +6,6 @@ import unittest
 
 import numpy as np
 import pandas as pd
-
 from src.calc.base import BaseCalculator
 from src.calc.strategies import get_strategy
 from src.calc.strategies.generic import GenericStrategy

@@ -3,7 +3,6 @@ Tests for ValidationEngine
 """
 
 import pytest
-
 from src.validation_engine import ValidationEngine
 
 

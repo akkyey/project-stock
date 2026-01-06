@@ -31,7 +31,7 @@ class TestHardCutting(unittest.TestCase):
         # 2. Insolvent (Equity Ratio < 0)
         insolvent_data = normal_data.copy()
         insolvent_data["equity_ratio"] = -5.0
-        
+
         # [Fix] Expect new error code from StockAnalysisData
         is_valid, issues = self.validator.validate_stock_data(insolvent_data)
         self.assertFalse(is_valid)
@@ -40,8 +40,8 @@ class TestHardCutting(unittest.TestCase):
         # 3. Severe OCF Drain
         drain_data = normal_data.copy()
         drain_data["operating_cf"] = -150  # -15% margin (sales=1000)
-        drain_data["ocf_margin"] = -15.0   # [Fix] OCF margin must be provided
-        
+        drain_data["ocf_margin"] = -15.0  # [Fix] OCF margin must be provided
+
         is_valid, issues = self.validator.validate_stock_data(drain_data)
         self.assertFalse(is_valid)
         self.assertIn("operating_cf_extreme_negative", "".join(issues))

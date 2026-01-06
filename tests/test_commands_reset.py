@@ -2,7 +2,6 @@ import unittest
 from unittest.mock import patch
 
 from peewee import SqliteDatabase
-
 from src.commands.reset import ResetCommand
 from src.models import AnalysisResult, MarketData, Stock, db_proxy
 

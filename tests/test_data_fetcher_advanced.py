@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import requests
-
 from src.fetcher import DataFetcher
 from src.fetcher.technical import calc_technical_indicators
 

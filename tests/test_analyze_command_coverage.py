@@ -3,7 +3,6 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import pandas as pd
-
 from src.commands.analyze import AnalyzeCommand
 
 
@@ -123,7 +122,9 @@ class TestAnalyzeCommandCoverage(unittest.TestCase):
         # モックのStockAnalysisDataインスタンスを設定
         mock_stock_instance = MagicMock()
         mock_stock_instance.should_skip_analysis = True
-        mock_stock_instance.validation_flags.skip_reasons = [MagicMock(value="Critical Debt")]
+        mock_stock_instance.validation_flags.skip_reasons = [
+            MagicMock(value="Critical Debt")
+        ]
         mock_stock_data_cls.return_value = mock_stock_instance
 
         mock_provider = mock_provider_cls.return_value

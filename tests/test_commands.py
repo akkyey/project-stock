@@ -90,9 +90,11 @@ class TestExtractCommand(unittest.TestCase):
         mock_engine_cls,
     ):
         """execute should process candidates and save valid tasks."""
+
         # Setup to_thread to run sync but be awaitable
         async def mock_to_thread_side_effect(f, *args, **kwargs):
             return f(*args, **kwargs)
+
         mock_to_thread.side_effect = mock_to_thread_side_effect
 
         from src.commands.extract import ExtractCommand
@@ -197,9 +199,11 @@ class TestAnalyzeCommand(unittest.TestCase):
         mock_engine_cls,
     ):
         """execute should process candidates with AI agent and save results."""
+
         # Setup to_thread to run sync but be awaitable
         async def mock_to_thread_side_effect(f, *args, **kwargs):
             return f(*args, **kwargs)
+
         mock_to_thread.side_effect = mock_to_thread_side_effect
 
         from src.commands.analyze import AnalyzeCommand

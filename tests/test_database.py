@@ -3,7 +3,6 @@ import unittest
 from datetime import datetime
 
 from peewee import SqliteDatabase
-
 from src.database import StockDatabase
 from src.models import AnalysisResult, MarketData, Stock, db_proxy
 

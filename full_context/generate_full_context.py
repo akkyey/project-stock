@@ -16,7 +16,7 @@ def is_git_tracked(filepath):
                 git_root = current_dir
                 break
             current_dir = os.path.dirname(current_dir)
-        
+
         if not git_root:
             # Fallback to current script's project root if no specific git root found
             # (Though if we are not in a git repo at all, likely not tracked)
@@ -25,10 +25,7 @@ def is_git_tracked(filepath):
         # 2. Check strict with git ls-files from that root
         rel_path = os.path.relpath(filepath, git_root)
         res = subprocess.run(
-            ["git", "ls-files", rel_path],
-            capture_output=True,
-            text=True,
-            cwd=git_root
+            ["git", "ls-files", rel_path], capture_output=True, text=True, cwd=git_root
         )
         return bool(res.stdout.strip())
     except Exception:
@@ -73,7 +70,8 @@ def generate_full_context():
         ("Stock Analyzer Scripts", get_files("stock-analyzer4/*.py")),
         (
             "Source Code (src)",
-            get_files("stock-analyzer4/src/*.py") + get_files("stock-analyzer4/src/**/*.py"),
+            get_files("stock-analyzer4/src/*.py")
+            + get_files("stock-analyzer4/src/**/*.py"),
         ),  # Recursive for src submodules
         # [v2.2] Slimming & Critical Context
         ("History (Latest 3)", sorted(get_files("history/*.md"), reverse=True)[:3]),

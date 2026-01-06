@@ -2,10 +2,9 @@ import os
 import time
 
 import pandas as pd
+from src.config_loader import ConfigLoader
 from src.data_fetcher import DataFetcher
 from src.excel_writer import ExcelWriter
-
-from src.config_loader import ConfigLoader
 
 
 def benchmark():

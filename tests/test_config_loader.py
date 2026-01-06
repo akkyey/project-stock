@@ -2,7 +2,6 @@ from unittest.mock import mock_open, patch
 
 import pytest
 import yaml
-
 from src.config_loader import ConfigLoader, load_config
 
 
@@ -11,11 +10,26 @@ def mock_config_data(tmp_path):
     return {
         "current_strategy": "value_strict",
         "config_defaults": {
-            "paths": {"db_file": str(tmp_path / "stock.db"), "output_dir": str(tmp_path / "output"), "output_file": str(tmp_path / "output/result.csv")},
+            "paths": {
+                "db_file": str(tmp_path / "stock.db"),
+                "output_dir": str(tmp_path / "output"),
+                "output_file": str(tmp_path / "output/result.csv"),
+            },
             "logging": {"level": "INFO", "file": "stock_analyzer.log"},
             "api": {"wait_time": 1.0, "max_retries": 3, "timeout": 30},
-            "scoring": {"weights": {"value": 0.3, "growth": 0.3, "quality": 0.2, "trend": 0.2}, "thresholds": {"per_max": 20.0, "pbr_max": 2.0, "roe_min": 8.0, "equity_ratio_min": 30.0}},
-            "strategies": {"value_strict": {"per_max": 15.0, "pbr_max": 1.5}, "growth_quality": {"roe_min": 10.0, "profit_growth_min": 10.0}},
+            "scoring": {
+                "weights": {"value": 0.3, "growth": 0.3, "quality": 0.2, "trend": 0.2},
+                "thresholds": {
+                    "per_max": 20.0,
+                    "pbr_max": 2.0,
+                    "roe_min": 8.0,
+                    "equity_ratio_min": 30.0,
+                },
+            },
+            "strategies": {
+                "value_strict": {"per_max": 15.0, "pbr_max": 1.5},
+                "growth_quality": {"roe_min": 10.0, "profit_growth_min": 10.0},
+            },
             "ai": {"model_name": "gemini-2.0-flash-exp", "temperature": 0.2},
         },
         "data": {

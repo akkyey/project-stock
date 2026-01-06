@@ -1,10 +1,9 @@
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
-
 from src.database import StockDatabase
 from src.models import (
     AnalysisResult,
@@ -89,7 +88,8 @@ class TestSentinelOrchestratorIntegration:
                 ),
                 strategy_name="test_strat",
                 quant_score=90,
-                analyzed_at=get_current_time() - timedelta(days=7), # Set to a past date
+                analyzed_at=get_current_time()
+                - timedelta(days=7),  # Set to a past date
             )
             print("DEBUG: Initial Stock and AnalysisResult created.")
 
@@ -263,7 +263,7 @@ class TestSentinelOrchestratorIntegration:
 
         # 3. Verify Report
         from pathlib import Path
-    
+
         # Use the overridden output path
         output_dir = Path(test_out_dir)
         report_files = list(output_dir.glob("daily_report_*.csv"))

@@ -205,10 +205,12 @@ class TestFetchCandidates(unittest.TestCase):
         """_fetch_candidates_logic がリストを返すことを確認"""
         from src.commands.extract import ExtractCommand
 
-        df = pd.DataFrame([
-            {"code": "1001", "name": "A", "quant_score": 80},
-            {"code": "1002", "name": "B", "quant_score": 70},
-        ])
+        df = pd.DataFrame(
+            [
+                {"code": "1001", "name": "A", "quant_score": 80},
+                {"code": "1002", "name": "B", "quant_score": 70},
+            ]
+        )
 
         mock_provider = MagicMock()
         mock_provider.load_latest_market_data.return_value = df
@@ -244,10 +246,12 @@ class TestFetchCandidates(unittest.TestCase):
         """_fetch_candidates_by_code のテスト"""
         from src.commands.extract import ExtractCommand
 
-        df = pd.DataFrame([
-            {"code": "1001", "name": "A", "quant_score": 80},
-            {"code": "1002", "name": "B", "quant_score": 70},
-        ])
+        df = pd.DataFrame(
+            [
+                {"code": "1001", "name": "A", "quant_score": 80},
+                {"code": "1002", "name": "B", "quant_score": 70},
+            ]
+        )
 
         mock_provider = MagicMock()
         mock_provider.load_latest_market_data.return_value = df
@@ -298,16 +302,18 @@ class TestProcessSingleCandidate(unittest.TestCase):
 
         cmd = ExtractCommand(get_mock_config(), debug_mode=True)
 
-        row = pd.Series({
-            "code": "1001",
-            "name": "Test Stock",
-            "quant_score": 85,
-            "sector": "Tech",
-            "current_price": 1000,
-            "per": 15,
-            "pbr": 1.2,
-            "roe": 10,
-        })
+        row = pd.Series(
+            {
+                "code": "1001",
+                "name": "Test Stock",
+                "quant_score": 85,
+                "sector": "Tech",
+                "current_price": 1000,
+                "per": 15,
+                "pbr": 1.2,
+                "roe": 10,
+            }
+        )
 
         task, is_valid, reason = cmd._process_single_candidate(row, "test_strategy")
 
@@ -332,7 +338,10 @@ class TestProcessSingleCandidate(unittest.TestCase):
         from src.commands.extract import ExtractCommand
 
         mock_validator = MagicMock()
-        mock_validator.validate_stock_data.return_value = (False, ["Missing critical data"])
+        mock_validator.validate_stock_data.return_value = (
+            False,
+            ["Missing critical data"],
+        )
         mock_validator_cls.return_value = mock_validator
 
         mock_agent = MagicMock()

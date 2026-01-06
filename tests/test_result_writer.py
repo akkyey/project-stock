@@ -3,7 +3,6 @@ import shutil
 import unittest
 
 import pandas as pd
-
 from src.result_writer import ResultWriter
 
 

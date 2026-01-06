@@ -13,7 +13,6 @@ import unittest
 from datetime import datetime, timedelta
 
 import pytest
-
 from src.database import StockDatabase
 from src.fetcher.facade import DataFetcher
 

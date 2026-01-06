@@ -197,17 +197,24 @@ class TestAIAgent(unittest.TestCase):
     @patch("os.path.exists")
     def test_create_prompt_without_market_context(self, mock_exists):
         """市場コンテキストファイルが存在しない場合のプロンプト生成テスト"""
+
         # 全ての探索パス（market_context.txt関連）に対して False を返すように設定
         # ただし config/ai_prompts.yaml 等は存在する必要がある
         def side_effect(path):
             if "market_context.txt" in path:
                 return False
-            return os.path.original_exists(path) if hasattr(os, "original_exists") else True
+            return (
+                os.path.original_exists(path)
+                if hasattr(os, "original_exists")
+                else True
+            )
 
         # Note: os.path.exists をパッチすると無限ループや他の不具合のリスクがあるため、
         # より安全に "ai.prompt_builder.os.path.exists" をパッチします。
         with patch("src.ai.prompt_builder.os.path.exists") as mock_p_exists:
-            mock_p_exists.side_effect = lambda p: False if "market_context.txt" in p else os.path.exists(p)
+            mock_p_exists.side_effect = lambda p: (
+                False if "market_context.txt" in p else os.path.exists(p)
+            )
 
             # --- Test Data ---
             row_data = {

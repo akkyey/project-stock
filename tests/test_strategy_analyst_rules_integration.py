@@ -11,7 +11,6 @@
 
 
 import pytest
-
 from src.domain.models import SkipReason, StockAnalysisData
 
 

@@ -8,7 +8,6 @@ import tempfile
 import unittest
 
 import yaml
-
 from src.fetcher.base import FetcherBase
 
 

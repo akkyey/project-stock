@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
-import sys
-import pytest
 import os
+import sys
+
+import pytest
 
 if __name__ == "__main__":
     print("🚀 Running Modernized Test Suite via Pytest (CI Wrapper)...")
-    
+
     # Ensure project root is in sys.path
     project_root = os.path.dirname(os.path.abspath(__file__))
     if project_root not in sys.path:

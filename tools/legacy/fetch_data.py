@@ -3,7 +3,6 @@ import logging
 import os
 
 import pandas as pd
-
 from src.database import StockDatabase
 from src.logger import setup_logger
 from src.utils import rotate_file_backup
