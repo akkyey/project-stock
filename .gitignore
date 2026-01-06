@@ -25,3 +25,6 @@ stock-analyzer4/
 
 # Parent level logs/temp
 *.log
+
+# Git temporary files
+.git_commit_msg
