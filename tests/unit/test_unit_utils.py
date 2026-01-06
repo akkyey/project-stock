@@ -7,8 +7,9 @@ base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 sys.path.append(base_dir)
 sys.path.append(os.path.join(base_dir, "stock-analyzer4"))
 
-from src.config_loader import ConfigLoader
-from equity_auditor import EquityAuditor
+from equity_auditor import EquityAuditor  # noqa: E402
+from src.config_loader import ConfigLoader  # noqa: E402
+
 
 class TestUtils(unittest.TestCase):
     def test_config_loader(self):
@@ -17,7 +18,7 @@ class TestUtils(unittest.TestCase):
         # We need to ensure we look from project-stock2 root
         # Start from base_dir determined above
         abs_config_path = os.path.join(base_dir, config_path)
-        
+
         if os.path.exists(abs_config_path):
             loader = ConfigLoader(abs_config_path)
             self.assertIsInstance(loader.config, dict)
@@ -32,7 +33,7 @@ class TestUtils(unittest.TestCase):
         # It is usually run as script.
         # Here we import it as module. Be careful about its internal imports.
         # It imports 'src.orchestrator', which should work given sys.path setup.
-        
+
         runner = EquityAuditor(debug_mode=True)
         self.assertIn("extract", runner.commands)
         self.assertIn("analyze", runner.commands)
@@ -44,6 +45,7 @@ class TestUtils(unittest.TestCase):
         self.assertIsNotNone(runner.commands["analyze"].agent)
 
         print("Antigravity Runner Init -> OK")
+
 
 if __name__ == "__main__":
     unittest.main()

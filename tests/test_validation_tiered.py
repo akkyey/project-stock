@@ -1,9 +1,13 @@
-import pytest
+from typing import Any, Dict
 
+import pytest
 from src.validation_engine import ValidationEngine
 
 # Mock Config
-config = {"sector_policies": {"default": {"na_allowed": []}}, "metadata_mapping": {}}
+config: Dict[str, Any] = {
+    "sector_policies": {"default": {"na_allowed": []}},
+    "metadata_mapping": {},
+}
 
 
 @pytest.fixture
@@ -30,7 +34,7 @@ def test_tier1_critical_missing(engine):
         "per": 10,
         "pbr": 1,
         "roe": 5,
-        "sales_growth": 0,    # Provide Tier 2 defaults to avoid Tier2 warnings mixing in (optional)
+        "sales_growth": 0,  # Provide Tier 2 defaults to avoid Tier2 warnings mixing in (optional)
         "dividend_yield": 0,
     }
     valid, issues = engine.validate_stock_data(data)
@@ -70,10 +74,10 @@ def test_anomalies_warning(engine):
         "equity_ratio": 50,
         "operating_cf": 100,
         "operating_margin": 0.1,
-        "per": 10,  
+        "per": 10,
         "pbr": 1,
         "roe": 5,
-        "sales_growth": -10.0, # Declining Sales -> Red Flag
+        "sales_growth": -10.0,  # Declining Sales -> Red Flag
         "dividend_yield": 2,
     }
     valid, issues = engine.validate_stock_data(data)

@@ -1,9 +1,10 @@
 import os
 import sys
+import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
+
 import pandas as pd
-import tempfile
 
 # Path resolution to include stock-analyzer4/src in sys.path
 # Since this file is in tests/unit/, we need to go up two levels to root, then into stock-analyzer4
@@ -11,11 +12,12 @@ base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 sys.path.append(base_dir)
 sys.path.append(os.path.join(base_dir, "stock-analyzer4"))
 
-from src.database import StockDatabase
-from src.database_factory import DatabaseFactory
-from src.fetcher import DataFetcher
-from src.result_writer import ResultWriter
-from src.models import MarketData
+from src.database import StockDatabase  # noqa: E402
+from src.database_factory import DatabaseFactory  # noqa: E402
+from src.fetcher import DataFetcher  # noqa: E402
+from src.models import MarketData  # noqa: E402
+from src.result_writer import ResultWriter  # noqa: E402
+
 
 class TestDatabaseSystem(unittest.TestCase):
     def setUp(self):
@@ -29,7 +31,7 @@ class TestDatabaseSystem(unittest.TestCase):
                 "output_path": "data/output/test_result.csv",
                 "jp_stock_list": "data/input/test_list.csv",
             },
-            "paths": {"db_file": ":memory:"} # Default to memory if not specified
+            "paths": {"db_file": ":memory:"},  # Default to memory if not specified
         }
 
     def tearDown(self):
@@ -183,7 +185,7 @@ class TestDatabaseSystem(unittest.TestCase):
 
         test_filename = "test_output.xlsx"
         expected_csv = "data/output/test_output.csv"
-        
+
         # Ensure output dir exists
         os.makedirs("data/output", exist_ok=True)
 
@@ -197,9 +199,10 @@ class TestDatabaseSystem(unittest.TestCase):
             if os.path.exists(expected_csv):
                 os.remove(expected_csv)
 
+
 class TestDatabaseBatchFeatures(unittest.TestCase):
     """Refactored from self_diagnostic.py new base features test"""
-    
+
     def setUp(self):
         DatabaseFactory.reset()
         self.tf = tempfile.NamedTemporaryFile(delete=False)
@@ -240,6 +243,7 @@ class TestDatabaseBatchFeatures(unittest.TestCase):
 
         print("StockDatabase.get_market_data_batch -> OK")
 
+
 class TestFetcherFacadeIsolated(unittest.TestCase):
     """[v12.1] DataFetcher.fetch_data_from_db の完全分離テスト"""
 
@@ -279,6 +283,7 @@ class TestFetcherFacadeIsolated(unittest.TestCase):
             DatabaseFactory.reset()
             if os.path.exists(isolated_db_path):
                 os.remove(isolated_db_path)
+
 
 if __name__ == "__main__":
     unittest.main()

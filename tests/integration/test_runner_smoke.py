@@ -1,15 +1,16 @@
 import os
 import sys
-import unittest
 import tempfile
+import unittest
 
 # Path resolution
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 sys.path.append(base_dir)
 sys.path.append(os.path.join(base_dir, "stock-analyzer4"))
 
-from src.config_loader import load_config
-from equity_auditor import EquityAuditor
+from equity_auditor import EquityAuditor  # noqa: E402
+from src.config_loader import load_config  # noqa: E402
+
 
 class TestRunnerSmoke(unittest.TestCase):
     """[v7.5] End-to-End Smoke Tests for Runner"""
@@ -21,8 +22,8 @@ class TestRunnerSmoke(unittest.TestCase):
         # Currently in project-stock2 root
         config_path = os.path.join(base_dir, "config/config.yaml")
         if not os.path.exists(config_path):
-             print("Skipping smoke test: config/config.yaml not found.")
-             return
+            print("Skipping smoke test: config/config.yaml not found.")
+            return
 
         config = load_config(config_path)
         strategies = list(config.get("strategies", {}).keys())
@@ -45,10 +46,13 @@ class TestRunnerSmoke(unittest.TestCase):
                     # We might need to ensure CWD is correct or config path is correct for it.
                     # EquityAuditor uses "config/config.yaml" by default.
                     # Since we run pytest from project root, it should be fine.
-                    
-                    if strategy not in runner.config["strategies"] and strategy != "turnaround_spec":
-                         print(f"Skipping {strategy} (not in loaded config)")
-                         continue
+
+                    if (
+                        strategy not in runner.config["strategies"]
+                        and strategy != "turnaround_spec"
+                    ):
+                        print(f"Skipping {strategy} (not in loaded config)")
+                        continue
 
                     # Guard against strategies that might fail if data is missing
                     # This is a smoke test, so we expect it to 'run', not necessarily find data.
@@ -65,6 +69,7 @@ class TestRunnerSmoke(unittest.TestCase):
                     self.fail(f"Runner failed for strategy '{strategy}': {e}")
 
         print("Runner Smoke Test -> ALL OK")
+
 
 if __name__ == "__main__":
     unittest.main()
