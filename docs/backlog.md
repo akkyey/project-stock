@@ -26,10 +26,8 @@ API制限解除後に実行すべき、新規実装機能のテスト計画。
 ---
 
 ## Logic Enhancements
-- [ ] **Calculate Real Volatility from History** (Status: Pending)
-  - **Proposed**: 2025-12-24
-  - **Details**: Currently using Beta as a proxy for Volatility. Should calculate standard deviation of returns from `stock.history` for accurate volatility.
-  - **Reason**: Beta measures market correlation, not price volatility. AI interpretation might be skewed.
+- [x] **Calculate Real Volatility from History** (Status: Completed - 2026-01-07)
+  - **Details**: Implemented in `technical.py` using daily log returns (6mo history) and integrated into `ScoringEngine` as a risk adjustment factor.
 
 ---
 
