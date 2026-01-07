@@ -20,6 +20,7 @@ Stock Analyzer v12.0 は、定量的戦略（フィルタリング）と定性�
 - **Scoring Engine (`src/calc/engine.py`)**:
     - **戦略登録制**: `STRATEGY_REGISTRY` により、動的な戦略の追加が可能。
     - **Explainable Scoring**: スコアを要素分解し、`v1` (Legacy) および `v2` (Vectorized Generic) 戦略をサポート。
+    - **リスク調整 (v14.0)**: `real_volatility` (実ボラティリティ) に基づく自動ペナルティ (-10pt) ロジックを統合。
 - **Validation Engine (`src/validation_engine.py`)**:
     - **セクター別ポリシー**: セクターごとのデータ欠損許容度や異常値判定を動的に適用。
     - **並列検証**: `ThreadPoolExecutor` を活用し、大量の銘柄データを高速に検証。
@@ -29,7 +30,7 @@ Stock Analyzer v12.0 は、定量的戦略（フィルタリング）と定性�
 ### 4. AI 層 (Qualitative Analysis)
 - **AI パッケージ (`src/ai/`)**:
     - **`KeyManager`**: 複数 API キーのローテーションと健康診断 (Health Check)。
-    - **`PromptBuilder`**: 戦略に応じた動的なプロンプト生成。
+    - **`PromptBuilder`**: 戦略に応じた動的なプロンプト生成。`real_volatility` や `beta` などのリスク指標を変数として注入。
     - **`ResponseParser`**: AI 出力の厳格なパースと構造化。
     - **`AIAgent`**: 上記を統合し、Gemini API を用いた定性的評価を実行。
 
@@ -43,4 +44,4 @@ Stock Analyzer v12.0 は、定量的戦略（フィルタリング）と定性�
 - **テスト網羅率**: `pytest` によるユニットテストおよび統合テスト。
 
 ---
-*最終更新: 2026-01-01 (v12.0)*
+*最終更新: 2026-01-07 (v14.0)*

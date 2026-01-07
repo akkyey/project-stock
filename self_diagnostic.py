@@ -24,4 +24,8 @@ if __name__ == "__main__":
 
     # Run pytest
     # Return the exit code to the caller (e.g., CI system)
-    sys.exit(pytest.main(["tests/unit", "tests/integration"]))
+    sys.exit(pytest.main([
+        "tests/unit",
+        "tests/integration",
+        "stock-analyzer4/tests/unit"
+    ]))

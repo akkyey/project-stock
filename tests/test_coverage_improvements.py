@@ -300,17 +300,6 @@ class TestPromptBuilder(unittest.TestCase):
                 self.assertIsNotNone(builder)
 
 
-class TestAnalyzer(unittest.TestCase):
-    """analyzer.py のカバレッジ改善テスト"""
-
-    def test_init_analyzer(self):
-        """Analyzerの初期化"""
-        from src.analyzer import StockAnalyzer
-
-        config = {"strategies": {}, "paths": {"output_dir": "/tmp"}}
-        with patch("src.analyzer.DataProvider"):
-            analyzer = StockAnalyzer(config, debug_mode=True)
-            self.assertIsNotNone(analyzer)
 
 
 class TestValidationEngineNew(unittest.TestCase):

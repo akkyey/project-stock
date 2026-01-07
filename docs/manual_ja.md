@@ -1,6 +1,6 @@
-# Stock Analyzer v12.0 - ユーザーマニュアル
+# Stock Analyzer v14.0 - ユーザーマニュアル
 
-Stock Analyzer v12.0 の操作マニュアルです。本バージョンでは **Equity Auditor** が中核となり、型安全な ScoringEngine と AI パッケージにより、より高度で信頼性の高い分析を実現します。
+Stock Analyzer v14.0 の操作マニュアルです。本バージョンでは **Equity Auditor** が中核となり、実ボラティリティ指標の導入により、より高度で信頼性の高い分析を実現します。
 
 ## 全体ワークフロー
 
@@ -27,9 +27,9 @@ python orchestrator.py weekly --debug # 最初はデバッグ推奨
 python equity_auditor.py --mode analyze --limit 5 --strategy value_strict --format csv
 ```
 - **特徴**:
-    - **Scoring Engine**: 戦略ごとの動的なスコアリング。
+    - **Scoring Engine**: 戦略ごとの動的なスコアリング。実ボラティリティに基づくリスク調整機能を搭載。
     - **Validation Engine**: セクター別の厳格なデータ品質チェック。
-    - **AIAgent (v12.0)**: 分割されたモジュールによる、より正確な定性的パース。
+    - **AIAgent (v14.0)**: 分割されたモジュールによる、より正確な定性的パース。リスク指標を考慮した投資判断。
     - **Smart Cache / Hybrid Retry**: API リソースの効率化とエラー時の自動復旧。
 
 ### 3. テストと品質確認
@@ -78,9 +78,9 @@ python equity_auditor.py --mode reset --strategy value_strict
 ```
 
 ## 設計・仕様関連
-- **[アーキテクチャ設計](architecture_ja.md)**: v12.0 内部構造
+- **[アーキテクチャ設計](architecture_ja.md)**: v14.0 内部構造
 - **[テスト仕様書](testing_manual_ja.md)**: テスト・静的解析手順
 - **[開発バックログ](backlog.md)**: 今後の計画
 
 ---
-*最終更新: 2026-01-01 (v12.0)*
+*最終更新: 2026-01-07 (v14.0)*
