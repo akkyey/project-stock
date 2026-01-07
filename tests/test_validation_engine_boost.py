@@ -1,7 +1,9 @@
-import pytest
 from unittest.mock import MagicMock
-from src.validation_engine import ValidationEngine
+
+import pytest
+
 from src.domain.models import StockAnalysisData
+from src.validation_engine import ValidationEngine
 
 class TestValidationEngineBoost:
     @pytest.fixture

@@ -1,7 +1,9 @@
 import os
 import sys
+
+
 import yaml
-import pandas as pd
+import yfinance as yf
 from dotenv import load_dotenv
 
 # Submodule path
@@ -9,7 +11,6 @@ sys.path.append(os.path.join(os.getcwd(), "stock-analyzer4"))
 
 from src.ai.agent import AIAgent
 from src.fetcher.technical import calc_technical_indicators
-import yfinance as yf
 
 def get_sbg_data():
     code = "9984"

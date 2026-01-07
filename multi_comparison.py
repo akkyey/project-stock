@@ -1,8 +1,8 @@
-import pandas as pd
-import yfinance as yf
-import numpy as np
 import os
 import sys
+
+import pandas as pd
+import yfinance as yf
 
 # Submodule path
 sys.path.append(os.path.join(os.getcwd(), "stock-analyzer4"))
