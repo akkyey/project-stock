@@ -1,14 +1,1 @@
-pandas
-numpy
-yfinance
-peewee
-python-dotenv
-pyyaml
-tqdm
-requests
-pandas-datareader
-google-generativeai
-pytest
-pytest-cov
-ruff
-mypy
+-r stock-analyzer4/requirements.txt
