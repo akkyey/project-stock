@@ -1,6 +1,6 @@
 # Project Full Context Report
 
-Generated at: 2026-01-10 18:08:46
+Generated at: 2026-01-10 20:18:36
 
 ## Documentation
 
@@ -1668,6 +1668,25 @@ strategies:
       roe: 10.0
       profit_growth: 0.0
       trend_signal: 1.0
+    metrics_metadata:
+      sales_growth: {direction: "higher", category: "growth"}
+      pbr: {direction: "lower", category: "value"}
+      roe: {direction: "higher", category: "quality", missing_penalty: 10.0}
+      profit_growth: {direction: "higher", category: "growth"}
+      trend_signal: {direction: "higher", category: "trend"}
+    status_bonuses:
+      turnaround_status:
+        turnaround_black: 20   # 黒字転換
+        loss_shrinking: 5      # 赤字縮小
+        fall_red: -15          # 転落赤字 (Penalty)
+      profit_status:
+        surge: 10              # 急増
+        loss_expanding: -5     # 赤字拡大 (Penalty)
+        crash: -15             # 急減 (Penalty)
+      is_turnaround:
+        "1": 10                # ターンアラウンドフラグ
+      trend_up:
+        "0": -10               # Trend Down Penalty (Matches logic: +10 if 1, -10 if 0)
 
 scoring_v2:
   macro:
@@ -4007,8 +4026,6 @@ import pandas as pd
 
 from src.calc.strategies.base import BaseStrategy
 from src.calc.strategies.generic import GenericStrategy
-from src.calc.strategies.turnaround import TurnaroundStrategy
-
 
 class ScoringEngine:
     """各戦略クラスにスコアリング処理を振り分ける中央エンジン。
@@ -4019,9 +4036,8 @@ class ScoringEngine:
     """
 
     # Strategy Registry
-    STRATEGY_REGISTRY: Dict[str, Type[BaseStrategy]] = {
-        "turnaround_spec": TurnaroundStrategy,
-    }
+    STRATEGY_REGISTRY: Dict[str, Type[BaseStrategy]] = {}
+
 
     GENERIC_STRATEGIES: set[str] = set()
 
@@ -6016,6 +6032,7 @@ class MetricMetadata(BaseModel):
 
     direction: str = "higher"  # 'higher' or 'lower'
     category: str = "quality"  # 'value', 'growth', 'trend', 'quality'
+    missing_penalty: float = 0.0  # [New] 欠損時のペナルティスコア
 
 
 class StrategyConfig(BaseModel):
@@ -6029,6 +6046,7 @@ class StrategyConfig(BaseModel):
     points: Dict[str, int]
     thresholds: Dict[str, float]
     metrics_metadata: Dict[str, MetricMetadata] = {}
+    status_bonuses: Dict[str, Dict[str, float]] = {}  # [New] ステータス別ボーナス {col: {val: pts}}
 
 
 class AIConfig(BaseModel):
