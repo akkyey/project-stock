@@ -1,6 +1,6 @@
 # Project Full Context Report
 
-Generated at: 2026-01-10 13:18:24
+Generated at: 2026-01-10 18:08:46
 
 ## Documentation
 
@@ -1549,6 +1549,15 @@ strategies:
       rsi_oversold: 40
       sales_growth: 10.0
       trend_signal: 1.0
+    metrics_metadata:
+      cf_status: {direction: "higher", category: "quality"}
+      peg_ratio: {direction: "lower", category: "value"}
+      profit_growth: {direction: "higher", category: "growth"}
+      roe: {direction: "higher", category: "quality"}
+      rsi_overbought: {direction: "higher", category: "trend"}
+      rsi_oversold: {direction: "lower", category: "trend"}
+      sales_growth: {direction: "higher", category: "growth"}
+      trend_signal: {direction: "higher", category: "trend"}
   value_growth_hybrid:
     default_style: value_balanced
     persona: "GARP Evaluator" # [v7.1] Growth at a Reasonable Price
@@ -1569,6 +1578,12 @@ strategies:
       per: 20.0
       roe: 10.0
       sales_growth: 10.0
+    metrics_metadata:
+      dividend_yield: {direction: "higher", category: "value"}
+      pbr: {direction: "lower", category: "value"}
+      per: {direction: "lower", category: "value"}
+      roe: {direction: "higher", category: "quality"}
+      sales_growth: {direction: "higher", category: "growth"}
   Balanced Strategy:
     default_style: value_balanced
     persona: "Multi-Strategy Allocator"
@@ -1582,6 +1597,9 @@ strategies:
     thresholds:
       per: 15.0
       roe: 8.0
+    metrics_metadata:
+      per: {direction: "lower", category: "value"}
+      roe: {direction: "higher", category: "quality"}
   value_strict:
     default_style: value_balanced
     persona: "Deep Value Investor" # [v7.1]
@@ -1618,6 +1636,17 @@ strategies:
       rsi_overbought: 70
       rsi_oversold: 30
       trend_signal: 1.0
+    metrics_metadata:
+      cf_status: {direction: "higher", category: "quality"}
+      current_ratio: {direction: "higher", category: "quality"}
+      dividend_yield: {direction: "higher", category: "value"}
+      pbr: {direction: "lower", category: "value"}
+      peg_ratio: {direction: "lower", category: "value"}
+      per: {direction: "lower", category: "value"}
+      roe: {direction: "higher", category: "quality"}
+      rsi_overbought: {direction: "higher", category: "trend"}
+      rsi_oversold: {direction: "lower", category: "trend"}
+      trend_signal: {direction: "higher", category: "trend"}
 
   turnaround_spec: # [v6.1] 新設: ターンアラウンド・投機戦略
     default_style: turnaround_style
@@ -1909,7 +1938,7 @@ tqdm
 requests
 xlrd>=2.0.1
 pandas-datareader
-google-generativeai
+google-genai>=0.3.0
 pytest
 pytest-cov
 ruff
@@ -2242,6 +2271,7 @@ if __name__ == "__main__":
 
 ```python
 """デバッグ用: DataProviderのデータ取得確認スクリプト"""
+
 from src.config_loader import load_config
 from src.provider import DataProvider
 
@@ -2250,10 +2280,10 @@ provider = DataProvider(config)
 df = provider.load_latest_market_data()
 print(f"Total rows in latest market data: {len(df)}")
 if not df.empty:
-    target_codes = ['7203', '8035', '9984']
-    found = df[df['code'].astype(str).isin(target_codes)]
+    target_codes = ["7203", "8035", "9984"]
+    found = df[df["code"].astype(str).isin(target_codes)]
     print("Target stocks found in 'latest' view:")
-    print(found[['code', 'entry_date']])
+    print(found[["code", "entry_date"]])
 else:
     print("DataFrame is empty!")
 
@@ -2265,6 +2295,7 @@ else:
 
 ```python
 """デバッグ用: ScoringEngineのスコア計算確認スクリプト"""
+
 import os
 import sys
 
@@ -2281,12 +2312,12 @@ provider = DataProvider(config)
 df = provider.load_latest_market_data()
 print(f"Total rows in latest market data: {len(df)}")
 
-target_codes = ['7203', '8035', '9984']
-found = df[df['code'].astype(str).isin(target_codes)]
+target_codes = ["7203", "8035", "9984"]
+found = df[df["code"].astype(str).isin(target_codes)]
 print(f"Target stocks found: {len(found)}")
 if not found.empty:
     print("Real Volatility in found DF:")
-    print(found[['code', 'real_volatility']])
+    print(found[["code", "real_volatility"]])
 
 if not found.empty:
     engine = ScoringEngine(config)
@@ -2296,7 +2327,9 @@ if not found.empty:
         scored_df = engine.calculate_score(found, strategy_name=strategy)
         print(f"Scored DF rows: {len(scored_df)}")
         if not scored_df.empty:
-            print(scored_df[['code', 'quant_score', 'real_volatility', 'score_penalty']])
+            print(
+                scored_df[["code", "quant_score", "real_volatility", "score_penalty"]]
+            )
     except Exception as e:
         print(f"Scoring failed: {e}")
 else:
@@ -2659,11 +2692,13 @@ from src.validation_engine import ValidationEngine
 # カスタム例外: リトライ対象
 class RateLimitError(Exception):
     """APIクォータ制限エラー (429)"""
+
     pass
 
 
 class TransientAPIError(Exception):
     """一時的なAPIエラー（リトライ対象）"""
+
     pass
 
 
@@ -2827,9 +2862,7 @@ class AIAgent:
 
             # クォータ制限（429 / ResourceExhausted）のチェック
             if "429" in err_msg or "ResourceExhausted" in err_msg:
-                self.logger.warning(
-                    f"⚠️ Key #{idx+1} hit rate limit (429). Rotating..."
-                )
+                self.logger.warning(f"⚠️ Key #{idx+1} hit rate limit (429). Rotating...")
                 self.key_manager.update_stats(idx, "error_429_count")
                 self.key_manager.key_stats[idx]["is_exhausted"] = True
                 if self._rotate_key():
@@ -3023,9 +3056,7 @@ class AIAgent:
     def _parse_response(self, text: str) -> Dict[str, Any]:
         return self.response_parser.parse_response(text)
 
-    def _validate_response(
-        self, result: Dict[str, Any]
-    ) -> Tuple[bool, Optional[str]]:
+    def _validate_response(self, result: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
         return self.response_parser.validate_response(result)
 
     def _generate_dqf_alert(self, row: Dict[str, Any]) -> Optional[str]:
@@ -3489,7 +3520,8 @@ class PromptBuilder:
         )
 
         # 変数辞書の生成
-        base_vars = {
+        base_vars = row.copy()
+        base_vars.update({
             "code": code,
             "name": name,
             "sector": sector_info,
@@ -3545,7 +3577,7 @@ class PromptBuilder:
             "red_flags_list": row.get("red_flags_list", "なし"),
             "rescue_status": row.get("rescue_status", "非該当"),
             "pydantic_validated": row.get("pydantic_validated", False),
-        }
+        })
         base_vars.update(threshold_vars)
         return base_vars
 
@@ -3572,6 +3604,21 @@ class PromptBuilder:
         except KeyError as e:
             self.logger.warning(f"Missing key in metrics template: {e}")
             metrics_section = "[Metrics Generation Error]"
+
+        # [v9.0] Dynamic Metric Injection
+        strategies_cfg = self.config.get("strategies", {})
+        strat_cfg = strategies_cfg.get(strategy_name, {})
+        points_map = strat_cfg.get("points", {})
+        
+        dynamic_metrics = []
+        for metric in points_map.keys():
+            # Check if metric is already in template (by placeholder check)
+            if f"{{{metric}}}" not in metrics_tmpl:
+                val = vars_dict.get(metric, "N/A")
+                dynamic_metrics.append(f"- {metric}: {val}")
+        
+        if dynamic_metrics:
+            metrics_section += "\n" + "\n".join(dynamic_metrics)
 
         vars_dict["metrics_section"] = metrics_section
 
@@ -3960,10 +4007,7 @@ import pandas as pd
 
 from src.calc.strategies.base import BaseStrategy
 from src.calc.strategies.generic import GenericStrategy
-from src.calc.strategies.growth_quality import GrowthQualityStrategy
 from src.calc.strategies.turnaround import TurnaroundStrategy
-from src.calc.strategies.value_growth_hybrid import ValueGrowthHybridStrategy
-from src.calc.strategies.value_strict import ValueStrictStrategy
 
 
 class ScoringEngine:
@@ -3977,9 +4021,6 @@ class ScoringEngine:
     # Strategy Registry
     STRATEGY_REGISTRY: Dict[str, Type[BaseStrategy]] = {
         "turnaround_spec": TurnaroundStrategy,
-        "value_strict": ValueStrictStrategy,
-        "growth_quality": GrowthQualityStrategy,
-        "value_growth_hybrid": ValueGrowthHybridStrategy,
     }
 
     GENERIC_STRATEGIES: set[str] = set()
@@ -4041,14 +4082,14 @@ class ScoringEngine:
 
         try:
             result = strategy.calculate_score(data)
-            
+
             # [v12.0 Cleanup] Merge scores back into original DataFrame
             # Always merge to ensure original columns (code, name, etc.) are preserved
             merged = data.copy()
             for col in result.columns:
                 merged[col] = result[col]
             return merged
-                 
+
         except Exception as e:
             self.logger.error(
                 f"Error in calculate_score with {strategy_name}: {e}", exc_info=True
@@ -4336,25 +4377,28 @@ class CircuitBreaker:
 Colab Utility Tools for Stock Analyzer
 Provides shared functionality for Notebooks running on Google Colab.
 """
+
 import os
 import shutil
 import sys
-from pathlib import Path
+from datetime import datetime
 from getpass import getpass
 from typing import Optional
-from datetime import datetime
-import glob
 
 
 class ColabTools:
     """Helper class for Colab operations."""
 
-    def __init__(self, mount_path: str = "/content/drive", project_root_drive: str = "/content/drive/MyDrive/StockAnalyzer_Prod"):
+    def __init__(
+        self,
+        mount_path: str = "/content/drive",
+        project_root_drive: str = "/content/drive/MyDrive/StockAnalyzer_Prod",
+    ):
         self.mount_path = mount_path
         self.project_root_drive = project_root_drive
         self.is_colab = os.path.exists("/content") or os.environ.get("COLAB_GPU")
 
-    def mount_google_drive(self):
+    def mount_google_drive(self) -> None:
         """Mount Google Drive if not already mounted."""
         if not self.is_colab:
             print("🖥️ Running locally. Skipping Drive mount.")
@@ -4363,113 +4407,161 @@ class ColabTools:
         if not os.path.exists(self.mount_path):
             print("📂 Mounting Google Drive...")
             from google.colab import drive
+
             drive.mount(self.mount_path)
         else:
             print("✅ Google Drive is already mounted.")
-        
+
         # Ensure project root exists on Drive
         os.makedirs(self.project_root_drive, exist_ok=True)
         print(f"📂 Drive Workspace: {self.project_root_drive}")
 
-    def install_dependencies(self, requirements_path: str = "requirements.txt"):
+    def install_dependencies(self, requirements_path: str = "requirements.txt") -> None:
         """Install dependencies from requirements.txt."""
         print("📦 Installing dependencies...")
         if os.path.exists(requirements_path):
             os.system(f"{sys.executable} -m pip install -q -r {requirements_path}")
         else:
             print(f"⚠️ {requirements_path} not found. Installing default packages.")
-            os.system(f"{sys.executable} -m pip install -q pandas yfinance peewee python-dotenv pandas-datareader pyyaml tqdm requests google-generativeai")
+            os.system(
+                f"{sys.executable} -m pip install -q pandas yfinance peewee python-dotenv pandas-datareader pyyaml tqdm requests google-generativeai"
+            )
         print("✅ Dependencies installed.")
 
     def list_backups(self) -> list[str]:
-        """List available database backups in Drive, sorted by newness."""
+        """archive/ フォルダ内のアーカイブ一覧を返す（新しい順）。
+
+        Returns:
+            フォルダ名のリスト（例: ["20260110_1600", "20260109_0930"]）
+        """
         if not self.is_colab:
             return []
-        
+
         # Ensure mount
         if not os.path.exists(self.project_root_drive):
             try:
                 from google.colab import drive
+
                 drive.mount(self.mount_path)
-            except:
+            except Exception:
                 return []
 
-        search_pattern = os.path.join(self.project_root_drive, "*.db")
-        files = glob.glob(search_pattern)
-        # Sort by modification time (newest first)
-        files.sort(key=os.path.getmtime, reverse=True)
-        return [os.path.basename(f) for f in files]
+        archive_dir = os.path.join(self.project_root_drive, "archive")
+        if not os.path.exists(archive_dir):
+            return []
+
+        # サブフォルダ一覧を取得
+        folders = [
+            d
+            for d in os.listdir(archive_dir)
+            if os.path.isdir(os.path.join(archive_dir, d))
+        ]
+        # 新しい順にソート（フォルダ名がタイムスタンプなので文字列比較で可）
+        folders.sort(reverse=True)
+        return folders
 
     def get_latest_backup(self) -> Optional[str]:
         """Get the filename of the most recent backup."""
         backups = self.list_backups()
         return backups[0] if backups else None
 
-    def restore_db(self, local_path: str = "data/stock_master.db", drive_filename: str = "stock_master.db"):
-        """Restore database from Drive.
-        
+    def restore_db(
+        self,
+        local_path: str = "data/stock_master.db",
+        archive_folder: Optional[str] = None,
+    ) -> None:
+        """Gdriveからデータベースを復元する。
+
         Args:
-            local_path: Destination path in local environment.
-            drive_filename: Name of the file in Drive (e.g. stock_master_2026.db)
+            local_path: ローカルの保存先パス
+            archive_folder: アーカイブフォルダ名（例: "20260109_0930"）。
+                           Noneの場合はカレントDBを復元。
         """
         if not self.is_colab:
             return
 
-        drive_db_path = os.path.join(self.project_root_drive, drive_filename)
-        
+        if archive_folder:
+            # アーカイブから復元
+            drive_db_path = os.path.join(
+                self.project_root_drive, "archive", archive_folder, "stock_master.db"
+            )
+            print(f"📥 Restoring from Archive: {archive_folder}")
+        else:
+            # カレントDBを復元
+            drive_db_path = os.path.join(self.project_root_drive, "stock_master.db")
+            print("📥 Restoring Current DB from Drive...")
+
         if os.path.exists(drive_db_path):
-            print(f"📥 Restoring DB from Drive: {drive_db_path}")
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
             shutil.copy2(drive_db_path, local_path)
-            print("✅ DB Restored.")
+            print(f"✅ DB Restored: {drive_db_path}")
         else:
             print(f"ℹ️ File not found on Drive: {drive_db_path}")
 
-    def backup_db(self, local_path: str = "data/stock_master.db", base_name: str = "stock_master"):
-        """Backup local database to Drive with versioning.
-        
-        Saves as: {base_name}_YYYYMMDD_HHMM.db
+    def save_db(self, local_path: str = "data/stock_master.db") -> None:
+        """ローカルDBをGdriveに保存する。
+
+        既存のカレントDBがあれば archive/ に退避してから保存。
         """
         if not self.is_colab:
             return
 
         if not os.path.exists(local_path):
-            print(f"⚠️ Local DB not found at {local_path}. Nothing to backup.")
+            print(f"⚠️ Local DB not found at {local_path}. Nothing to save.")
             return
 
-        # Generate Timestamped Filename
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-        drive_filename = f"{base_name}_{timestamp}.db"
+        current_db_path = os.path.join(self.project_root_drive, "stock_master.db")
+        archive_dir = os.path.join(self.project_root_drive, "archive")
 
-        print(f"💾 Backing up DB to Drive as {drive_filename}...")
-        dest_db = os.path.join(self.project_root_drive, drive_filename)
-        destination_dir = os.path.dirname(dest_db)
-
-        # 1. Check & Remount
-        if not os.path.exists(destination_dir):
+        # 1. Driveアクセス確認 & リマウント
+        if not os.path.exists(self.project_root_drive):
             print("⚠️ Drive path not accessible. Attempting remount...")
             try:
                 from google.colab import drive
+
                 drive.mount(self.mount_path, force_remount=True)
             except Exception as e:
                 print(f"❌ Remount failed: {e}")
+                return
 
-        # 2. Try Copy
+        # 2. 既存カレントDBをアーカイブに退避
+        if os.path.exists(current_db_path):
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+            archive_folder = os.path.join(archive_dir, timestamp)
+            os.makedirs(archive_folder, exist_ok=True)
+            archive_db_path = os.path.join(archive_folder, "stock_master.db")
+            try:
+                shutil.move(current_db_path, archive_db_path)
+                print(f"📦 Archived current DB to: {archive_folder}/")
+            except Exception as e:
+                print(f"⚠️ Archive failed: {e}")
+
+        # 3. ローカルDBをカレントに保存
         try:
-            os.makedirs(destination_dir, exist_ok=True)
-            shutil.copy2(local_path, dest_db)
-            print(f"✅ DB Saved to: {dest_db}")
+            shutil.copy2(local_path, current_db_path)
+            print(f"✅ DB Saved to: {current_db_path}")
         except Exception as e:
-            print(f"❌ Drive Backup Failed: {e}")
+            print(f"❌ Save Failed: {e}")
             print("🚀 Initiating Emergency Download via Browser...")
             try:
                 from google.colab import files
+
                 files.download(local_path)
                 print("✅ Download triggered.")
             except Exception as d_e:
                 print(f"❌ Emergency Download failed: {d_e}")
 
-    def backup_output(self, local_dir: str = "data/output", drive_dir_name: str = "output"):
+    # 後方互換性のためのエイリアス
+    def backup_db(
+        self, local_path: str = "data/stock_master.db", base_name: str = "stock_master"
+    ) -> None:
+        """後方互換性のためのエイリアス。save_db() を使用してください。"""
+        print("⚠️ backup_db() is deprecated. Use save_db() instead.")
+        self.save_db(local_path)
+
+    def backup_output(
+        self, local_dir: str = "data/output", drive_dir_name: str = "output"
+    ) -> None:
         """Backup output directory to Drive."""
         if not self.is_colab:
             return
@@ -4479,28 +4571,31 @@ class ColabTools:
 
         print("💾 Backing up Output files...")
         drive_output_dir = os.path.join(self.project_root_drive, drive_dir_name)
-        
+
         if not os.path.exists(os.path.dirname(drive_output_dir)):
-             try:
-                 from google.colab import drive
-                 drive.mount(self.mount_path, force_remount=True)
-             except Exception:
-                 pass
+            try:
+                from google.colab import drive
+
+                drive.mount(self.mount_path, force_remount=True)
+            except Exception:
+                pass
 
         try:
             import distutils.dir_util
+
             os.makedirs(drive_output_dir, exist_ok=True)
             distutils.dir_util.copy_tree(local_dir, drive_output_dir)
             print(f"✅ Output Saved to: {drive_output_dir}")
         except Exception:
             print("⚠️ Output backup failed.")
-    
-    def setup_gemini_key(self):
+
+    def setup_gemini_key(self) -> None:
         """Setup Gemini API Key from Secrets or Input."""
         # Try loading from Secrets (Colab)
         try:
             from google.colab import userdata
-            key = userdata.get('GEMINI_API_KEY')
+
+            key = userdata.get("GEMINI_API_KEY")
             if key:
                 os.environ["GEMINI_API_KEY"] = key
                 print("🔑 Loaded GEMINI_API_KEY from Secrets.")
@@ -5019,7 +5114,9 @@ class AnalyzeCommand(BaseCommand):
         df = df[df["code"].astype(str).isin(codes)]
         return self._score_candidates(df, strategy, filter_rank=False)
 
-    def _score_candidates(self, df: pd.DataFrame, strategy: str, filter_rank: bool = True) -> pd.DataFrame:
+    def _score_candidates(
+        self, df: pd.DataFrame, strategy: str, filter_rank: bool = True
+    ) -> pd.DataFrame:
         """候補のスコアリングとフィルタリングを実行する共通ヘルパー。"""
         engine = ScoringEngine(self.config)
         df = engine.calculate_score(df, strategy_name=strategy)
@@ -5375,9 +5472,12 @@ class ExtractCommand(BaseCommand):
         # Validate using Pydantic-based Logic
         # [v12.0 Cleanup] Use validate_stock_data instead of regex prompt validation
         from src.domain.models import StockAnalysisData
+
         stock_data = StockAnalysisData(**data)
-        
-        is_valid, reasons = self.validator.validate_stock_data(data, stock=stock_data, strategy=strategy)
+
+        is_valid, reasons = self.validator.validate_stock_data(
+            data, stock=stock_data, strategy=strategy
+        )
         reason = "; ".join(reasons) if not is_valid else "OK"
 
         return task, is_valid, reason
@@ -5869,9 +5969,6 @@ def load_config(config_path=None):
     loader = ConfigLoader(config_path)
     return loader.config
 
-
-
-
 ```
 
 ---
@@ -5894,12 +5991,14 @@ from pydantic import BaseModel, Field, field_validator
 
 class DataConfig(BaseModel):
     """データパス設定。"""
+
     jp_stock_list: str = "data/input/jp_stock_list.csv"
     output_path: str = "data/output/analysis_result.csv"
 
 
 class FilterConfig(BaseModel):
     """フィルタ設定。"""
+
     max_rsi: Optional[int] = 100
     min_quant_score: Optional[int] = 60
     min_trading_value: Optional[int] = 10000000
@@ -5907,12 +6006,21 @@ class FilterConfig(BaseModel):
 
 class CsvMappingConfig(BaseModel):
     """CSVマッピング設定。"""
+
     col_map: Dict[str, str]
     numeric_cols: List[str]
 
 
+class MetricMetadata(BaseModel):
+    """指標メタデータ定義。"""
+
+    direction: str = "higher"  # 'higher' or 'lower'
+    category: str = "quality"  # 'value', 'growth', 'trend', 'quality'
+
+
 class StrategyConfig(BaseModel):
     """投資戦略設定。"""
+
     default_style: str
     persona: str
     default_horizon: str
@@ -5920,10 +6028,12 @@ class StrategyConfig(BaseModel):
     min_requirements: Dict[str, float]
     points: Dict[str, int]
     thresholds: Dict[str, float]
+    metrics_metadata: Dict[str, MetricMetadata] = {}
 
 
 class AIConfig(BaseModel):
     """AI分析設定。"""
+
     model_name: str
     max_concurrency: int = Field(default=1, ge=1)
     interval_sec: float = Field(default=2.0, ge=0.0)
@@ -5933,22 +6043,26 @@ class AIConfig(BaseModel):
 
 class CircuitBreakerConfig(BaseModel):
     """サーキットブレーカー設定。"""
+
     consecutive_failure_threshold: int = 5
     reset_timeout: int = 60  # [v13.0] pybreaker対応で追加
 
 
 class DatabaseConfig(BaseModel):
     """データベース設定。"""
+
     retention_days: int = 30
 
 
 class APISettingsConfig(BaseModel):
     """API設定。"""
+
     gemini_tier: str = "free"
 
 
 class SectorPolicy(BaseModel):
     """セクターごとのポリシー設定。"""
+
     na_allowed: List[str] = []
     score_exemptions: List[str] = []
     ai_prompt_excludes: List[str] = []
@@ -5956,12 +6070,14 @@ class SectorPolicy(BaseModel):
 
 class ScoringConfig(BaseModel):
     """スコアリング設定。"""
+
     lower_is_better: List[str] = []
     min_coverage_pct: Optional[int] = 50
 
 
 class ScoringV2Config(BaseModel):
     """スコアリング v2 設定。"""
+
     macro: Dict[str, str] = {}
     styles: Dict[str, Dict[str, float]] = {}
     tech_points: Dict[str, int] = {}
@@ -5970,12 +6086,14 @@ class ScoringV2Config(BaseModel):
 
 class MetadataMappingConfig(BaseModel):
     """メタデータマッピング設定。"""
+
     metrics: Dict[str, str]
     validation: Dict[str, Any]
 
 
 class PathsConfig(BaseModel):
     """パス設定。"""
+
     db_file: Optional[str] = None
     output_dir: Optional[str] = None
 
@@ -5996,9 +6114,7 @@ class ConfigModel(BaseModel):
     scoring_v2: Optional[ScoringV2Config] = None
     strategies: Dict[str, StrategyConfig]
     ai: AIConfig
-    circuit_breaker: CircuitBreakerConfig = Field(
-        default_factory=CircuitBreakerConfig
-    )
+    circuit_breaker: CircuitBreakerConfig = Field(default_factory=CircuitBreakerConfig)
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     sector_policies: Dict[str, SectorPolicy] = {}
     sector_risks: Dict[str, str] = {}
@@ -6031,10 +6147,11 @@ ConfigSingleton - 設定の一元管理とシングルトンパターン
     # アプリケーション起動時（main / entrypoint）
     from src.config_singleton import ConfigSingleton
     ConfigSingleton.initialize()  # 失敗時は例外
-    
+
     # 各モジュール
     config = ConfigSingleton.get_config()
 """
+
 import os
 import threading
 from logging import getLogger
@@ -6049,68 +6166,69 @@ from src.env_loader import load_env_file
 
 class ConfigurationError(Exception):
     """設定の読み込みまたは検証に失敗した場合の例外"""
+
     pass
 
 
 class ConfigSingleton:
     """
     設定のシングルトン管理クラス。
-    
+
     スレッドセーフで、一度初期化されると設定はイミュータブルとして扱われる。
     """
-    
+
     _instance: Optional["ConfigSingleton"] = None
     _lock: threading.Lock = threading.Lock()
     _initialized: bool = False
-    
+
     def __new__(cls):
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
                     cls._instance = super().__new__(cls)
         return cls._instance
-    
+
     def __init__(self):
         # 初回のみ初期化
-        if not hasattr(self, '_config'):
+        if not hasattr(self, "_config"):
             self._config: Dict[str, Any] = {}
             self._raw_config: Dict[str, Any] = {}
             self._validated: bool = False
             self._config_path: str = ""
             self.logger = getLogger(__name__)
-    
+
     @classmethod
     def initialize(cls, config_path: Optional[str] = None, force: bool = False) -> None:
         """
         設定を初期化する。アプリケーション起動時に一度だけ呼び出す。
-        
+
         Args:
             config_path: 設定ファイルのパス。Noneの場合はデフォルトパスを使用。
             force: Trueの場合、既に初期化済みでも再初期化する。
-        
+
         Raises:
             ConfigurationError: 設定の読み込みまたは検証に失敗した場合。
         """
         instance = cls()
-        
+
         with cls._lock:
             if cls._initialized and not force:
                 return
-            
+
             # 環境変数をロード
             load_env_file()
-            
+
             # パスを決定
             path = config_path or CONFIG_PATH
             instance._config_path = path
-            
+
             # ファイル存在チェック
             if not os.path.exists(path):
                 raise ConfigurationError(
                     f"設定ファイルが見つかりません: {path}\n"
                     f"現在のディレクトリ: {os.getcwd()}"
                 )
-            
+
             # YAMLパース
             try:
                 with open(path, "r", encoding="utf-8") as f:
@@ -6119,49 +6237,49 @@ class ConfigSingleton:
                 raise ConfigurationError(f"YAML パースエラー: {e}")
             except Exception as e:
                 raise ConfigurationError(f"設定ファイル読み込みエラー: {e}")
-            
+
             instance._raw_config = raw_config
-            
+
             # Pydantic 検証
             try:
                 validated = ConfigModel(**raw_config)
                 instance._config = validated.model_dump()
             except Exception as e:
                 raise ConfigurationError(f"設定検証エラー: {e}")
-            
+
             # 必須キーの存在確認
             cls._validate_required_keys(instance._config)
-            
+
             instance._validated = True
             cls._initialized = True
             instance.logger.info(f"設定を初期化しました: {path}")
-    
+
     @classmethod
     def _validate_required_keys(cls, config: Dict[str, Any]) -> None:
         """必須キーの存在を検証"""
         required_keys = [
             ("data", "jp_stock_list"),
         ]
-        
+
         for section, key in required_keys:
             if section not in config:
                 raise ConfigurationError(f"必須セクションがありません: {section}")
             if key not in config[section]:
                 raise ConfigurationError(f"必須キーがありません: {section}.{key}")
-    
+
     @classmethod
     def get_config(cls) -> Dict[str, Any]:
         """
         設定辞書を取得する。
-        
+
         Returns:
             検証済みの設定辞書。
-        
+
         Raises:
             ConfigurationError: 設定が初期化されていない場合。
         """
         instance = cls()
-        
+
         if not cls._initialized:
             # 自動初期化を試みる（後方互換性のため）
             try:
@@ -6171,46 +6289,46 @@ class ConfigSingleton:
                     "設定が初期化されていません。"
                     "アプリケーション起動時に ConfigSingleton.initialize() を呼び出してください。"
                 )
-        
+
         return instance._config.copy()  # コピーを返してイミュータブル性を保つ
-    
+
     @classmethod
     def get(cls, key: str, default: Any = None) -> Any:
         """
         設定値を安全に取得する。
-        
+
         Args:
             key: ドット区切りのキー（例: "data.jp_stock_list"）
             default: キーが存在しない場合のデフォルト値
-        
+
         Returns:
             設定値またはデフォルト値。
         """
         config = cls.get_config()
-        
+
         keys = key.split(".")
         value = config
-        
+
         for k in keys:
             if isinstance(value, dict):
-                value = value.get(k)
+                value = value.get(k)  # type: ignore
                 if value is None:
                     return default
             else:
                 return default
-        
+
         return value
-    
+
     @classmethod
     def is_initialized(cls) -> bool:
         """設定が初期化済みかどうかを返す"""
         return cls._initialized
-    
+
     @classmethod
     def reset(cls) -> None:
         """
         設定をリセットする（テスト用）。
-        
+
         本番環境では使用しないこと。
         """
         with cls._lock:
@@ -6244,7 +6362,9 @@ import os
 # 設定パス定数 (Config Path Constants)
 # すべての設定ファイルパスはここで定義し、各モジュールはこの定数を参照する
 # ============================================================
-CONFIG_DIR = "config"
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CONFIG_DIR = os.path.join(_PROJECT_ROOT, "config")
+
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.yaml")
 AI_PROMPTS_PATH = os.path.join(CONFIG_DIR, "ai_prompts.yaml")
 THRESHOLDS_PATH = os.path.join(CONFIG_DIR, "thresholds.yaml")
@@ -7090,7 +7210,6 @@ class JPXFetcher(FetcherBase):
             print("   📦 Rotating backup...", flush=True)
             rotate_file_backup(jp_stock_path)
 
-
         url = "https://www.jpx.co.jp/markets/statistics-equities/misc/tvdivq0000001vg2-att/data_j.xls"
 
         # Session setup for User-Agent
@@ -7108,6 +7227,7 @@ class JPXFetcher(FetcherBase):
             resp.raise_for_status()
 
             import io
+
             print(f"   📥 Downloading {len(resp.content)} bytes...", flush=True)
             df = pd.read_excel(io.BytesIO(resp.content))
 
@@ -7120,8 +7240,8 @@ class JPXFetcher(FetcherBase):
 
             # 市場区分名の正規化 (プライム、スタンダード、グロース、プライム（外国株）などを統一)
             def normalize_market(m):
-                m = str(m).split('（')[0].strip() # '（外国株）' などの括弧内を削除
-                m = m.replace(' 市場', '').strip()
+                m = str(m).split("（")[0].strip()  # '（外国株）' などの括弧内を削除
+                m = m.replace(" 市場", "").strip()
                 return m
 
             df["market"] = df["market"].apply(normalize_market)
@@ -7759,6 +7879,7 @@ def setup_logger(log_file="stock_analyzer.log"):
     # tqdmとの競合が懸念される場合は TqdmLoggingHandler を検討するが、
     # 現状は出力が表示されない問題の解決を優先。
     import sys
+
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
@@ -7858,7 +7979,7 @@ class MarketData(BaseModel):
     debt_equity_ratio = FloatField(null=True)
     free_cf = FloatField(null=True)
     volatility = FloatField(null=True)
-    real_volatility = FloatField(null=True) # [v14.0] Added
+    real_volatility = FloatField(null=True)  # [v14.0] Added
 
     # [v10.0] Phase 3: Advanced Technicals
     ma_divergence = FloatField(null=True)  # 25MA Divergence (%)
@@ -7949,18 +8070,20 @@ class RankHistory(BaseModel):
 ### stock-analyzer4/src/operations/maintenance.py
 
 ```python
-from logging import getLogger
 import os
+from logging import getLogger
+from typing import Optional
 
+from src.colab_tools import ColabTools
 from src.database import StockDatabase
 from src.fetcher.facade import DataFetcher
-from src.models import AnalysisResult, RankHistory, Stock, MarketData
-from src.colab_tools import ColabTools
+from src.models import AnalysisResult, RankHistory
+
 
 class DatabaseMaintenance:
     """Encapsulates database maintenance operations."""
 
-    def __init__(self, tools: ColabTools = None):
+    def __init__(self, tools: Optional[ColabTools] = None):
         self.logger = getLogger(__name__)
         self.db = StockDatabase()
         self.fetcher = DataFetcher()
@@ -7971,65 +8094,71 @@ class DatabaseMaintenance:
         print("⚠️ 全データを削除して再構築します...")
         if os.path.exists(self.db.db_path):
             os.remove(self.db.db_path)
-        
+
         # Re-init (create tables)
         self.db.create_tables()
 
         print("📥 データ取得中...")
         target_codes = None
         if fetch_limit > 0:
-             jpx_df = self.fetcher.fetch_jpx_list()
-             if not jpx_df.empty:
-                 target_codes = jpx_df['code'].tolist()[:fetch_limit]
-        
+            jpx_df = self.fetcher.fetch_jpx_list()
+            if not jpx_df.empty:
+                target_codes = jpx_df["code"].tolist()[:fetch_limit]
+
         df = self.fetcher.fetch_stock_data(codes=target_codes)
         if not df.empty:
-             records = df.to_dict(orient="records")
-             # Fix: Use actual name
-             stocks = [{'code': str(r['code']), 'name': r.get('name', 'Unknown')} for r in records]
-             self.db.upsert_stocks(stocks)
-             self.db.upsert_market_data(records)
-             print(f"✅ {len(records)} 件のデータを構築しました。")
+            records = df.to_dict(orient="records")
+            # Fix: Use actual name
+            stocks = [
+                {"code": str(r["code"]), "name": r.get("name", "Unknown")}
+                for r in records
+            ]
+            self.db.upsert_stocks(stocks)
+            self.db.upsert_market_data(records)
+            print(f"✅ {len(records)} 件のデータを構築しました。")
         else:
-             print("⚠️ データが取得できませんでした。")
+            print("⚠️ データが取得できませんでした。")
 
     def update_market_data(self, fetch_limit: int = 0, explicit_restore: bool = False):
-        """Update market data incrementally. 
+        """Update market data incrementally.
         Args:
              fetch_limit: Max stocks to fetch (0 for all).
-             explicit_restore: Safety flag. 
+             explicit_restore: Safety flag.
                                Note: Expected that CALLER handles restore before calling this.
         """
         print("🔄 マーケットデータを更新します...")
-        
+
         # User requested "Explicit Restore", so we assume current DB is what they want to update.
         # But we can verify if local DB exists.
         if not os.path.exists(self.db.db_path):
             print(f"⚠️ Warning: Local DB ({self.db.db_path}) not found. Creating new...")
 
         jpx_df = self.fetcher.fetch_jpx_list()
-        target_codes = jpx_df['code'].tolist() if not jpx_df.empty else None
+        target_codes = jpx_df["code"].tolist() if not jpx_df.empty else None
         if fetch_limit > 0 and target_codes:
             target_codes = target_codes[:fetch_limit]
-            
+
         df = self.fetcher.fetch_stock_data(codes=target_codes)
         if not df.empty:
-             records = df.to_dict(orient="records")
-             stocks = [{'code': str(r['code']), 'name': r.get('name', 'Unknown')} for r in records]
-             self.db.upsert_stocks(stocks)
-             self.db.upsert_market_data(records)
-             print(f"✅ {len(records)} 件のデータを更新しました。")
+            records = df.to_dict(orient="records")
+            stocks = [
+                {"code": str(r["code"]), "name": r.get("name", "Unknown")}
+                for r in records
+            ]
+            self.db.upsert_stocks(stocks)
+            self.db.upsert_market_data(records)
+            print(f"✅ {len(records)} 件のデータを更新しました。")
         else:
-             print("⚠️ データが取得できませんでした。")
+            print("⚠️ データが取得できませんでした。")
 
     def repair_master(self):
         """Fix stock master definitions (e.g. Names) from JPX list."""
         print("🛠️ 銘柄マスタ定義のみを修復します...")
-        
+
         jpx_df = self.fetcher.fetch_jpx_list()
         if not jpx_df.empty:
             records = jpx_df.to_dict(orient="records")
-            stocks = [{'code': str(r['code']), 'name': r['name']} for r in records]
+            stocks = [{"code": str(r["code"]), "name": r["name"]} for r in records]
             self.db.upsert_stocks(stocks)
             print(f"✅ {len(stocks)} 銘柄の名前をJPXリストから修復しました。")
         else:
@@ -8265,12 +8394,18 @@ class DailyHandler(ModeHandler):
         # 1. ターゲット選定
         target_map = self._get_balanced_targets(context, top_n_per_strategy=50)
         target_codes = list(target_map.keys())
-        
+
         if not target_codes:
-            context.logger.warning("⚠️ 分析対象銘柄がありません。AnalysisResult が空の可能性があります。")
-            context.logger.warning("💡 初回実行の場合は、まず [Weekly] モードを実行してランキングを作成してください。")
+            context.logger.warning(
+                "⚠️ 分析対象銘柄がありません。AnalysisResult が空の可能性があります。"
+            )
+            context.logger.warning(
+                "💡 初回実行の場合は、まず [Weekly] モードを実行してランキングを作成してください。"
+            )
         else:
-            context.logger.info(f"✅ {len(target_codes)} 銘柄を分析対象に選定しました。")
+            context.logger.info(
+                f"✅ {len(target_codes)} 銘柄を分析対象に選定しました。"
+            )
 
         # 2. バージョンリセット
         self._refresh_analysis_status(context, target_codes)
@@ -8296,7 +8431,9 @@ class DailyHandler(ModeHandler):
         execution_list = list(set(target_codes + alert_codes))
 
         if execution_list:
-            context.logger.info(f"🚀 {len(execution_list)} 銘柄の AI 分析を実行します...")
+            context.logger.info(
+                f"🚀 {len(execution_list)} 銘柄の AI 分析を実行します..."
+            )
             context.execute_equity_auditor(execution_list)
 
         # 5. レポート生成
@@ -8532,7 +8669,9 @@ def export_reports(
     report_data = []
     for code, info in code_map.items():
         latest_strat = info["latest"]["strategy_name"]
-        target_strat = source_map.get(code, latest_strat) if source_map else latest_strat
+        target_strat = (
+            source_map.get(code, latest_strat) if source_map else latest_strat
+        )
 
         # アラート由来の場合は元の戦略で履歴を表示
         if "Alert" in str(target_strat):
@@ -8666,7 +8805,9 @@ class WeeklyHandler(ModeHandler):
                     "✅ Auto-Repair completed. Resuming ranking process..."
                 )
             else:
-                context.logger.error("❌ Auto-Repair failed. Ranking may be inaccurate.")
+                context.logger.error(
+                    "❌ Auto-Repair failed. Ranking may be inaccurate."
+                )
 
         query = MarketData.select().where(MarketData.entry_date == max_date)
         df_all = pd.DataFrame(list(query.dicts()))
@@ -8935,10 +9076,12 @@ class Orchestrator:
         Args:
             mode_name (str): 実行モード ('daily', 'weekly', 'monthly')。
         """
-        from src.version import __version__, __last_updated__
+        from src.version import __last_updated__, __version__
 
         self.logger.info(f"🎻 Orchestrator started in [{mode_name.upper()}] mode.")
-        self.logger.info(f"📦 System Version: {__version__} (Last Updated: {__last_updated__})")
+        self.logger.info(
+            f"📦 System Version: {__version__} (Last Updated: {__last_updated__})"
+        )
 
         # 1. ハンドシェイク（アラートの未処理チェック）
         self._handshake_procedure()
@@ -9277,9 +9420,7 @@ class DataProvider:
 
         return None, row_hash
 
-    def save_analysis_result(
-        self, result: Dict[str, Any], strategy_name: str
-    ) -> None:
+    def save_analysis_result(self, result: Dict[str, Any], strategy_name: str) -> None:
         """分析結果を DB に保存。
 
         Args:
@@ -10106,7 +10247,11 @@ class ResultWriter:
             for col in int_cols:
                 if col in df_out.columns:
                     # [Fix] 明示的に数値変換してFutureWarningを回避
-                    df_out[col] = pd.to_numeric(df_out[col], errors="coerce").fillna(0).astype(int)
+                    df_out[col] = (
+                        pd.to_numeric(df_out[col], errors="coerce")
+                        .fillna(0)
+                        .astype(int)
+                    )
 
             # [v13.6] Respect AI-generated granular labels from v3.5 prompt
             if "ai_sentiment" in df_out.columns and "ai_risk" in df_out.columns:
@@ -10305,9 +10450,7 @@ class Sentinel:
                 return True
         return False
 
-    def run(
-        self, limit: int = 200, target_codes: Optional[List[str]] = None
-    ) -> None:
+    def run(self, limit: int = 200, target_codes: Optional[List[str]] = None) -> None:
         """監視ルーチンを実行する。
 
         Args:
@@ -10422,9 +10565,7 @@ class Sentinel:
 
         return results
 
-    def _process_yf_df(
-        self, df: pd.DataFrame, code: str
-    ) -> Optional[Dict[str, Any]]:
+    def _process_yf_df(self, df: pd.DataFrame, code: str) -> Optional[Dict[str, Any]]:
         """DataFrame を処理して最新のメトリクスを抽出する。"""
         if df.empty:
             return None
@@ -10683,8 +10824,8 @@ def rotate_file_backup(file_path):
     counter = 1
     while True:
         if counter > 100:
-             print("⚠️ Too many backup files. Overwriting last one.", flush=True)
-             break
+            print("⚠️ Too many backup files. Overwriting last one.", flush=True)
+            break
         new_name = f"{name}_{timestamp}_{counter:02d}{ext}"
         new_path = os.path.join(dirname, new_name)
         if not os.path.exists(new_path):
@@ -10774,8 +10915,6 @@ class ValidationEngine:
         """
         return self.sector_policies.get(sector, self.sector_policies.get("default", {}))
 
-
-
     def get_ai_excludes(self, sector: str) -> List[str]:
         policy = self.get_policy(sector)
         return policy.get("ai_prompt_excludes", [])
@@ -10792,8 +10931,6 @@ class ValidationEngine:
             self.logger.warning(
                 f"⚠️ The following sectors are not defined in sector_policies: {undefined}"
             )
-
-
 
     # ============================================================
     # [v2.0] Pydantic StockAnalysisData との統合
@@ -10869,20 +11006,25 @@ class ValidationEngine:
 
         if strategy == "growth_quality":
             if s_gro < 10 and s_trd > 70:
-                issues.append(f"Score Mismatch: Low Growth({s_gro}) vs High Trend({s_trd})")
+                issues.append(
+                    f"Score Mismatch: Low Growth({s_gro}) vs High Trend({s_trd})"
+                )
         elif strategy == "value_strict":
             if s_val < 15:
-                issues.append(f"Score Mismatch: Low Value Score ({s_val}) for Value Strategy")
+                issues.append(
+                    f"Score Mismatch: Low Value Score ({s_val}) for Value Strategy"
+                )
         elif strategy == "value_growth_hybrid":
             if s_val < 10 and s_gro < 10:
-                issues.append(f"Score Mismatch: Low Hybrid Scores (Val:{s_val}, Gro:{s_gro})")
-        
+                issues.append(
+                    f"Score Mismatch: Low Hybrid Scores (Val:{s_val}, Gro:{s_gro})"
+                )
+
         # If score mismatch found, it's usually a block
         if any("Score Mismatch" in i for i in issues):
-             return False, issues
+            return False, issues
 
         return True, issues
-
 
 ```
 
@@ -10892,6 +11034,7 @@ class ValidationEngine:
 
 ```python
 """システムバージョン情報"""
+
 __version__ = "2.0.0"
 __last_updated__ = "2026-01-09"
 
@@ -11095,18 +11238,35 @@ __last_updated__ = "2026-01-09"
 
 ---
 
-## Trouble Reports (Latest 1)
-
-### trouble/2026-01-06-report.md
+### history/2026-01-10.md
 
 ```markdown
-# 2026-01-06 障害レポート
+# 修正履歴 2026-01-10
 
-## 検出された不具合一覧
+- **対象ファイル**: [manage_database.ipynb](file:///home/irom/project-stock2/stock-analyzer4/notebook/manage_database.ipynb)
+- **修正内容**: 
+    - `OPERATION` パラメータのデフォルト値を選択肢リストと一致するように修正し、警告を解消しました。
+    - `TARGET_BACKUP` を手動入力から `ipywidgets.Dropdown` による動的選択に変更し、UXを向上させました。
+    - `StockDatabase` クラスに `create_tables` メソッドを追加し、`INITIALIZE_DB` 実行時の `AttributeError` を解消しました。
+- **対応不具合通番**: No.1 (INITIALIZE_DBエラー)
 
-| No. | 検出時刻 | 概要         | 原因                                                 | 影響                   | 修正案                                           | Status     |
-| --- | -------- | ------------ | ---------------------------------------------------- | ---------------------- | ------------------------------------------------ | ---------- |
-| 1   | 17:30    | コミット失敗 | black/ruff/mypy の指摘、およびサブモジュールの不整合 | CI/CD パイプライン停止 | 自動整形とLint修正、サブモジュールの先行コミット | ✅ Resolved |
+```
+
+---
+
+## Trouble Reports (Latest 1)
+
+### trouble/2026-01-10-report.md
+
+```markdown
+## 2026-01-10 障害レポート
+
+* **検出時刻:** 11:46
+* **通番:** No.1
+* **不具合の概要:** Notebookの「INITIALIZE_DB」実行時に `AttributeError: 'StockDatabase' object has no attribute 'create_tables'` が発生する。
+* **原因の提示:** `StockDatabase` クラスに `create_tables` メソッドが定義されていない。リファクタリング時に内部メソッド `_init_db` に集約されたが、呼び出し側 (`maintenance.py`) が更新されていなかった。
+* **影響 (Impact):** データベースの完全初期化（既存データの削除と再構築）が実行できない。
+* **修正案 (Proposed Fix):** `StockDatabase` クラスに公開メソッドとして `create_tables` を定義し、内部で `_init_db` を呼び出すように変更する。
 
 ```
 

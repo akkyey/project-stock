@@ -9,10 +9,7 @@ import pandas as pd
 from src.calc.base import BaseCalculator
 from src.calc.strategies import get_strategy
 from src.calc.strategies.generic import GenericStrategy
-from src.calc.strategies.growth_quality import GrowthQualityStrategy
 from src.calc.strategies.turnaround import TurnaroundStrategy
-from src.calc.strategies.value_growth_hybrid import ValueGrowthHybridStrategy
-from src.calc.strategies.value_strict import ValueStrictStrategy
 
 
 class TestBaseCalculatorCoverage(unittest.TestCase):
@@ -127,19 +124,19 @@ class TestStrategyFactoryCoverage(unittest.TestCase):
         self.assertIsInstance(s, TurnaroundStrategy)
 
     def test_get_value_strict_strategy(self):
-        """value_strict 分岐 (lines 15-16)"""
+        """value_strict 分岐 (Generic化)"""
         s = get_strategy("value_strict", self.config)
-        self.assertIsInstance(s, ValueStrictStrategy)
+        self.assertIsInstance(s, GenericStrategy)
 
     def test_get_growth_quality_strategy(self):
-        """growth_quality 分岐 (lines 17-18)"""
+        """growth_quality 分岐 (Generic化)"""
         s = get_strategy("growth_quality", self.config)
-        self.assertIsInstance(s, GrowthQualityStrategy)
+        self.assertIsInstance(s, GenericStrategy)
 
     def test_get_value_growth_hybrid_strategy(self):
-        """value_growth_hybrid 分岐 (lines 19-20)"""
+        """value_growth_hybrid 分岐 (Generic化)"""
         s = get_strategy("value_growth_hybrid", self.config)
-        self.assertIsInstance(s, ValueGrowthHybridStrategy)
+        self.assertIsInstance(s, GenericStrategy)
 
     def test_get_generic_strategy_fallback(self):
         """未知の戦略名はGenericにフォールバック (lines 22-23)"""
