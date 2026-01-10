@@ -35,3 +35,4 @@ debug_*.txt
 *.db
 .vscode/
 data/output/
+data/colabdata/
