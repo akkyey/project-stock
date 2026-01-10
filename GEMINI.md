@@ -285,3 +285,30 @@
 ```bash
 which python3  # 期待値: /home/irom/project-stock2/venv/bin/python3
 ```
+## 15. バージョン管理とブランチ運用 (Git Flow & Branch Management)
+
+### 基本方針 (Core Principles)
+1.  **永続ブランチは `main` のみ:** 常に最新の安定版を反映し、いつでも利用可能な状態を保つ。
+2.  **作業ブランチはすべて「使い捨て」:** 機能追加や修正ごとに短命のブランチを作成し、マージ後に即時削除する。
+
+### 推奨ワークフロー (Design Review PR Flow)
+タスク開始時に以下のステップを踏むことで、設計の合意形成と履歴のクリーンさを担保する。
+
+1.  **ブランチ作成:**
+    *   タスクの内容に応じたブランチを作成する。
+    *   命名規則: `feat/feature-name` (機能追加), `fix/bug-fix` (修正), `docs/update-docs` (ドキュメント)
+    *   コマンド例: `git checkout -b feat/add-new-feature`
+
+2.  **計画書の作成とPush (Design Proposal):**
+    *   コード実装の前に、まず設計書 (`docs/proposal/xxx.md`) や計画書 (`implementation_plan.md`) のみを作成・更新し、Commit & Pushを行う。
+    *   **この段階で Pull Request (Draft) を作成することを推奨する。**
+
+3.  **レビューと合意 (Review & Approve):**
+    *   GitHub上でユーザー（レビュアー）と計画内容について議論し、合意形成（Approve）を得る。
+
+4.  **実装 (Implementation):**
+    *   承認されたら、**同一のブランチ**でコードの実装を行う。
+
+5.  **マージと削除 (Merge & Delete):**
+    *   実装完了後、PRを `main` ブランチにマージする。
+    *   マージ後、**作業ブランチは必ず削除する**（GitHubの自動削除機能を推奨）。
