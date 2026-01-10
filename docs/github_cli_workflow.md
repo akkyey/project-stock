@@ -2,6 +2,7 @@
 
 VSCodeのターミナルから、GitHubの操作（PR作成・マージなど）を効率的に行うためのマニュアルです。
 
+
 ## 1. インストール (Linux / Ubuntu)
 
 ```bash
@@ -21,6 +22,7 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubc
 sudo apt-get update
 sudo apt-get install gh
 ```
+
 
 ## 2. 認証 (初回のみ)
 
